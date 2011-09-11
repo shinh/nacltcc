@@ -73,6 +73,7 @@ esac
 gprof="no"
 bigendian="no"
 mingw32="no"
+nacl="no"
 LIBSUF=".a"
 EXESUF=""
 
@@ -153,6 +154,8 @@ for opt do
   --enable-mingw32) mingw32="yes" ; cross_prefix="i686-pc-mingw32-" ; cpu=x86
   ;;
   --enable-cygwin) mingw32="yes" ; cygwin="yes" ; cross_prefix="mingw32-" ; cpu=x86
+  ;;
+  --enable-nacl) nacl="yes" ; cpu=x86-64 ; noldl="yes"
   ;;
   --enable-cross) build_cross="yes"
   ;;
@@ -276,6 +279,7 @@ echo "  --with-libgcc            use /lib/libgcc_s.so.1 instead of libtcc.a"
 echo "  --enable-mingw32         build windows version on linux with mingw32"
 echo "  --enable-cygwin          build windows version on windows with cygwin"
 echo "                           [requires cygwin and mingw32-make]"
+echo "  --enable-nacl            build native client version on x86-64 linux"
 echo "  --enable-cross           build cross compilers"
 echo "  --extra-cflags=          extra compiler flags"
 echo "  --extra-ldflags=         extra linker options"
@@ -431,6 +435,9 @@ fi
 if test "$mingw32" = "yes" ; then
   echo "CONFIG_WIN32=yes" >> config.mak
   echo "#define CONFIG_WIN32 1" >> $TMPH
+fi
+if test "$nacl" = "yes" ; then
+  echo "CONFIG_NACL=yes" >> config.mak
 fi
 if test "$cygwin" = "yes" ; then
   echo "#ifndef _WIN32" >> $TMPH
