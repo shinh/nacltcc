@@ -209,6 +209,8 @@ static void set_pages_executable(void *ptr, unsigned long length)
 #ifdef _WIN32
     unsigned long old_protect;
     VirtualProtect(ptr, length, PAGE_EXECUTE_READWRITE, &old_protect);
+#elif defined(__native_client__)
+    /* XXX: need to implement */
 #else
     unsigned long start, end;
     start = (uplong)ptr & ~(PAGESIZE - 1);
