@@ -714,6 +714,9 @@ ST_FUNC void *resolve_sym(TCCState *s1, const char *symbol)
 ST_FUNC void *resolve_sym(TCCState *s1, const char *sym)
 {
 #ifdef __native_client__
+    if (!strcmp(sym, "puts")) {
+        return &puts;
+    }
     return NULL;
 #else
     return dlsym(RTLD_DEFAULT, sym);
