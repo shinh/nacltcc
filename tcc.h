@@ -60,9 +60,11 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/time.h>
-#include <sys/ucontext.h>
 #include <sys/mman.h>
+#ifndef __native_client__
+#include <sys/ucontext.h>
 #include <dlfcn.h>
+#endif
 #endif
 
 #endif /* !CONFIG_TCCBOOT */
@@ -131,7 +133,7 @@
 #define TCC_TARGET_COFF
 #endif
 
-#if !defined(CONFIG_TCCBOOT)
+#if !defined(CONFIG_TCCBOOT) && !defined(__native_client__)
 #define CONFIG_TCC_BACKTRACE
 #endif
 

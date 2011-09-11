@@ -32,8 +32,10 @@ ST_DATA void *rt_prog_main;
 
 static void set_pages_executable(void *ptr, unsigned long length);
 static void set_exception_handler(void);
+#ifndef __native_client__
 static int rt_get_caller_pc(uplong *paddr, ucontext_t *uc, int level);
 static void rt_error(ucontext_t *uc, const char *fmt, ...);
+#endif
 static int tcc_relocate_ex(TCCState *s1, void *ptr);
 
 #ifdef _WIN64
@@ -709,7 +711,11 @@ ST_FUNC void *resolve_sym(TCCState *s1, const char *symbol)
 
 ST_FUNC void *resolve_sym(TCCState *s1, const char *sym)
 {
+#ifdef __native_client__
+    return NULL;
+#else
     return dlsym(RTLD_DEFAULT, sym);
+#endif
 }
 
 #endif /* CONFIG_TCC_STATIC */

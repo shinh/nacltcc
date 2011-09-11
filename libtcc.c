@@ -1046,9 +1046,13 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
         
     /* free any loaded DLLs */
     for ( i = 0; i < s1->nb_loaded_dlls; i++) {
+#ifdef __native_client__
+        tcc_error("dlclose: dll is not supported for nacl");
+#else
         DLLReference *ref = s1->loaded_dlls[i];
         if ( ref->handle )
             dlclose(ref->handle);
+#endif
     }
     
     /* free loaded dlls array */
@@ -1167,10 +1171,14 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
 #ifndef TCC_TARGET_PE
         if (ehdr.e_type == ET_DYN) {
             if (s1->output_type == TCC_OUTPUT_MEMORY) {
+#ifdef __native_client__
+                tcc_error("dlopen: dll is not supported for nacl");
+#else
                 void *h;
                 h = dlopen(filename, RTLD_GLOBAL | RTLD_LAZY);
                 if (h)
                     ret = 0;
+#endif
             } else {
                 ret = tcc_load_dll(s1, fd, filename, 
                                    (flags & AFF_REFERENCED_DLL) != 0);
