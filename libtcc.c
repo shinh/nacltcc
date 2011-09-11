@@ -979,6 +979,10 @@ LIBTCCAPI TCCState *tcc_new(void)
     tcc_define_symbol(s, "__WCHAR_TYPE__", "int");
 #endif
 
+#ifdef TCC_TARGET_NACL
+    tcc_define_symbol(s, "__native_client__", "1");
+#endif
+
     /* glibc defines */
     tcc_define_symbol(s, "__REDIRECT_NTH(name, proto, alias)", "name proto __asm__ (#alias) __THROW");
     
