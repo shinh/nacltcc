@@ -217,6 +217,8 @@ static int expand_args(char ***pargv, const char *str)
     return argc;
 }
 
+/* XXX: for now, we only support x86-64 native client */
+#ifndef __native_client__
 /* re-execute the i386/x86_64 cross-compilers with tcc -m32/-m64: */
 #if defined TCC_TARGET_I386 || defined TCC_TARGET_X86_64
 #ifdef _WIN32
@@ -261,6 +263,7 @@ static void exec_other_tcc(TCCState *s, char **argv, const char *optarg)
             tcc_warning("unsupported option \"-m%s\"", optarg);
     }
 }
+#endif
 #endif
 
 static void parse_option_D(TCCState *s1, const char *optarg)
@@ -496,9 +499,11 @@ int main(int argc, char **argv)
 
     optind = parse_args(s, argc, argv);
 
+#ifndef __native_client__
 #if defined TCC_TARGET_X86_64 || defined TCC_TARGET_I386
     if (m_option)
         exec_other_tcc(s, argv, m_option);
+#endif
 #endif
 
     if (print_search_dirs) {
