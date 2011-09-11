@@ -476,6 +476,23 @@ static int parse_args(TCCState *s, int argc, char **argv)
     return optind;
 }
 
+#ifdef __native_client__
+
+char* getcwd(char* buf, size_t size)
+{
+    tcc_error("getcwd is not defined");
+    strcpy(buf, ".");
+    return buf;
+}
+
+int unlink(const char* path)
+{
+    tcc_error("unlink is not defined");
+    return 0;
+}
+
+#endif
+
 int main(int argc, char **argv)
 {
     int i;
