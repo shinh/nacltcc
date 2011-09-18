@@ -122,6 +122,23 @@ ST_DATA const int reg_classes[NB_REGS] = {
 static unsigned long func_sub_sp_offset;
 static int func_ret_sub;
 
+#ifdef __native_client__
+void opadding()
+{
+    while (ind & 31)
+        g(0x90);
+}
+#endif
+
+void op(int n)
+{
+#ifdef __native_client__
+    if ((ind & 31) + n > 32) {
+        opadding();
+    }
+#endif
+}
+
 /* XXX: make it faster ? */
 void g(int c)
 {
@@ -135,6 +152,14 @@ void g(int c)
 
 void o(unsigned int c)
 {
+#ifdef __native_client__
+    unsigned int n = 0, v = c;
+    while (v) {
+        v = v >> 8;
+        n++;
+    }
+    op(n);
+#endif
     while (c) {
         g(c);
         c = c >> 8;
@@ -705,6 +730,7 @@ void gfunc_call(int nb_args)
 
 #define FUNC_PROLOG_SIZE 11
 
+
 /* generate function prolog of type 't' */
 void gfunc_prolog(CType *func_type)
 {
@@ -965,7 +991,11 @@ void gfunc_call(int nb_args)
 }
 
 
+#ifdef __native_client__
+#define FUNC_PROLOG_SIZE 13
+#else
 #define FUNC_PROLOG_SIZE 11
+#endif
 
 static void push_arg_reg(int i) {
     loc -= 8;
@@ -1103,6 +1133,23 @@ void gfunc_epilog(void)
 {
     int v, saved_ind;
 
+#ifdef __native_client__
+    if (func_ret_sub)
+        tcc_error("not implemented (ret n)");
+    o(0xec8948);
+    o(0x5b41);
+    /* naclrestbp */
+    op(6);
+    o(0xdd8944);
+    o(0xfd014c);
+    o(0x5b41);
+    /* nacljmp (ret) */
+    op(10);
+    o(0xe0e38341);
+    o(0xfb014d);
+    o(0xe3ff41);
+    opadding();
+#else
     o(0xc9); /* leave */
     if (func_ret_sub == 0) {
         o(0xc3); /* ret */
@@ -1111,13 +1158,22 @@ void gfunc_epilog(void)
         g(func_ret_sub);
         g(func_ret_sub >> 8);
     }
+#endif
     /* align local size to word & save local variables */
     v = (-loc + 15) & -16;
     saved_ind = ind;
     ind = func_sub_sp_offset - FUNC_PROLOG_SIZE;
     o(0xe5894855);  /* push %rbp, mov %rsp, %rbp */
+#ifdef __native_client__
+    /* naclasp */
+    op(9);
+    o(0xec81);    /* sub esp, stacksize */
+    gen_le32(v);
+    o(0xfc014c);  /* add rsp, r15 */
+#else
     o(0xec8148);  /* sub rsp, stacksize */
     gen_le32(v);
+#endif
     ind = saved_ind;
 }
 

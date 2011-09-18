@@ -1074,6 +1074,8 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
 #ifdef HAVE_SELINUX
     munmap (s1->write_mem, s1->mem_size);
     munmap (s1->runtime_mem, s1->mem_size);    
+#elif defined(__native_client__)
+    /* XXX: nacl_dyncode_delete(s1->runtime_mem, XXX); */
 #else
     tcc_free(s1->runtime_mem);
 #endif

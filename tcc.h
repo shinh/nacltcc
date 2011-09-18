@@ -67,6 +67,10 @@
 #endif
 #endif
 
+#ifdef __native_client__
+#include <nacl/nacl_dyncode.h>
+#endif
+
 #endif /* !CONFIG_TCCBOOT */
 
 #ifndef uplong

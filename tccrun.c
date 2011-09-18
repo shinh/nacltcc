@@ -30,9 +30,9 @@ ST_DATA void *rt_prog_main;
 #define ucontext_t CONTEXT
 #endif
 
+#ifndef __native_client__
 static void set_pages_executable(void *ptr, unsigned long length);
 static void set_exception_handler(void);
-#ifndef __native_client__
 static int rt_get_caller_pc(uplong *paddr, ucontext_t *uc, int level);
 static void rt_error(ucontext_t *uc, const char *fmt, ...);
 #endif
@@ -73,8 +73,19 @@ LIBTCCAPI int tcc_relocate(TCCState *s1)
 #else
     ret = tcc_relocate_ex(s1, NULL);
     if (-1 != ret) {
+#ifdef __native_client__
+        extern char _etext[];
+#define DYNAMIC_CODE_PAGE_SIZE     (0x10000)
+#define DYNAMIC_CODE_ALIGN(addr)   \
+    ((((uintptr_t) (addr)) + DYNAMIC_CODE_PAGE_SIZE - 1) & \
+     ~(DYNAMIC_CODE_PAGE_SIZE - 1))
+#define DYNAMIC_CODE_SEGMENT_START (DYNAMIC_CODE_ALIGN(_etext))
+        s1->runtime_mem = (void*)DYNAMIC_CODE_SEGMENT_START;
+        ret = tcc_relocate_ex(s1, s1->runtime_mem);
+#else
         s1->runtime_mem = tcc_malloc(ret);
         ret = tcc_relocate_ex(s1, s1->runtime_mem);
+#endif
     }
 #endif
     return ret;
@@ -181,6 +192,23 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
         length = s->data_offset;
         // printf("%-12s %08x %04x\n", s->name, s->sh_addr, length);
         ptr = (void*)(uplong)s->sh_addr;
+#ifdef __native_client__
+        if (s->sh_flags & SHF_EXECINSTR) {
+          /* XXX: just for debugging... disable this */
+#if 1
+          FILE* fp = fopen("/tmp/nacl.out", "w");
+          fwrite(s->data, 1, length, fp);
+          fclose(fp);
+#endif
+          length = (length + 31) & ~31;
+          int r = nacl_dyncode_create(ptr, s->data, length);
+            if (r != 0) {
+              tcc_error("NaCl verification error (%s) ptr=%p length=%lu",
+                        strerror(errno), ptr, length);
+              return -1;
+            }
+        }
+#else
         if (NULL == s->data || s->sh_type == SHT_NOBITS)
             memset(ptr, 0, length);
         else
@@ -188,9 +216,10 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
         /* mark executable sections as executable in memory */
         if (s->sh_flags & SHF_EXECINSTR)
             set_pages_executable(ptr, length);
+#endif
     }
 
-#if (defined TCC_TARGET_X86_64 || defined TCC_TARGET_ARM) && !defined TCC_TARGET_PE
+#if (defined TCC_TARGET_X86_64 || defined TCC_TARGET_ARM) && !defined TCC_TARGET_PE && !defined __native_client__
     set_pages_executable(s1->runtime_plt_and_got,
                          s1->runtime_plt_and_got_offset);
 #endif
@@ -201,6 +230,8 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
     return 0;
 }
 
+#ifndef __native_client__
+
 /* ------------------------------------------------------------- */
 /* allow to run code in memory */
 
@@ -209,8 +240,6 @@ static void set_pages_executable(void *ptr, unsigned long length)
 #ifdef _WIN32
     unsigned long old_protect;
     VirtualProtect(ptr, length, PAGE_EXECUTE_READWRITE, &old_protect);
-#elif defined(__native_client__)
-    /* XXX: need to implement */
 #else
     unsigned long start, end;
     start = (uplong)ptr & ~(PAGESIZE - 1);
@@ -219,6 +248,8 @@ static void set_pages_executable(void *ptr, unsigned long length)
     mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC);
 #endif
 }
+
+#endif
 
 /* ------------------------------------------------------------- */
 #ifdef CONFIG_TCC_BACKTRACE
