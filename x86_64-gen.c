@@ -364,6 +364,8 @@ void load(int r, SValue *sv)
     sv = pe_getimport(sv, &v2);
 #endif
 
+    op(6);
+
     fr = sv->r;
     ft = sv->type.t;
     fc = sv->c.ul;
@@ -497,6 +499,8 @@ void store(int r, SValue *v)
     SValue v2;
     v = pe_getimport(v, &v2);
 #endif
+
+    op(6);
 
     ft = v->type.t;
     fc = v->c.ul;
