@@ -279,7 +279,7 @@ ST_FUNC void gen_addrpc32(int r, Sym *sym, int c)
 /* output got address with relocation */
 static void gen_gotpcrel(int r, Sym *sym, int c)
 {
-#ifndef TCC_TARGET_PE
+#if !defined TCC_TARGET_PE && !defined __native_client__
     Section *sr;
     ElfW(Rela) *rel;
     greloc(cur_text_section, sym, ind, R_X86_64_GOTPCREL);
