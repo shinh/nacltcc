@@ -573,6 +573,10 @@ static void gcall_or_jmp(int is_jmp)
 {
     int r;
     if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
+        if (!is_jmp) {
+            while ((ind + 5) & 31)
+                g(0x90);
+        }
         /* constant case */
         if (vtop->r & VT_SYM) {
             /* relocation case */
