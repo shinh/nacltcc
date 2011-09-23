@@ -133,6 +133,11 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
 {
     Section *s;
     unsigned long offset, length;
+#ifdef __native_client__
+    static char data[0x10000000];
+    uplong data_mem = ((uplong)data + 0xffff) & ~0xffff;
+    unsigned long data_offset = 0;
+#endif
     uplong mem;
     int i;
 
@@ -157,8 +162,18 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
         if (0 == (s->sh_flags & SHF_ALLOC))
             continue;
         length = s->data_offset;
+#ifdef __native_client__
+        if (s->sh_flags & SHF_EXECINSTR) {
+            s->sh_addr = mem ? (mem + offset + 31) & ~31 : 0;
+            offset = (offset + length + 31) & ~31;
+        } else {
+            s->sh_addr = mem ? (data_mem + data_offset + 0xffff) & ~0xffff : 0;
+            data_offset = (data_offset + length + 0xffff) & ~0xffff;
+        }
+#else
         s->sh_addr = mem ? (mem + offset + 15) & ~15 : 0;
         offset = (offset + length + 15) & ~15;
+#endif
     }
     offset += 16;
 
@@ -194,19 +209,32 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
         ptr = (void*)(uplong)s->sh_addr;
 #ifdef __native_client__
         if (s->sh_flags & SHF_EXECINSTR) {
-          /* XXX: just for debugging... disable this */
+            /* XXX: just for debugging... disable this */
 #if 1
-          FILE* fp = fopen("/tmp/nacl.out", "w");
-          fwrite(s->data, 1, length, fp);
-          fclose(fp);
+            FILE* fp = fopen("/tmp/nacl.out", "w");
+            fwrite(s->data, 1, length, fp);
+            fclose(fp);
 #endif
-          length = (length + 31) & ~31;
-          int r = nacl_dyncode_create(ptr, s->data, length);
+            length = (length + 31) & ~31;
+            int r = nacl_dyncode_create(ptr, s->data, length);
             if (r != 0) {
-              tcc_error("NaCl verification error (%s) ptr=%p length=%lu",
-                        strerror(errno), ptr, length);
-              return -1;
+                tcc_error("NaCl verification error (%s) ptr=%p length=%lu",
+                          strerror(errno), ptr, length);
+                return -1;
             }
+        } else if (length) {
+            if (mmap(ptr, (length + 0xffff) & ~0xffff,
+                     PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+                     -1, 0) != ptr) {
+                tcc_error("Failed to mmap from %p length=%lu (%s)",
+                          ptr, length, strerror(errno));
+                return -1;
+            }
+            if (NULL == s->data || s->sh_type == SHT_NOBITS)
+                memset(ptr, 0, length);
+            else
+                memcpy(ptr, s->data, length);
         }
 #else
         if (NULL == s->data || s->sh_type == SHT_NOBITS)
