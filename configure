@@ -133,6 +133,8 @@ for opt do
   ;;
   --cc=*) cc=`echo $opt | cut -d '=' -f 2`
   ;;
+  --host_cc=*) host_cc=`echo $opt | cut -d '=' -f 2`
+  ;;
   --ar=*) ar=`echo $opt | cut -d '=' -f 2`
   ;;
   --extra-cflags=*) CFLAGS="${opt#--extra-cflags=}"
