@@ -57,6 +57,8 @@ endif
 
 ifdef CONFIG_NACL
 NATIVE_DEFINES+=-DTCC_TARGET_NACL
+CFLAGS+=-DCONFIG_TCC_STATIC
+CORE_FILES+=tccsyms.c
 endif
 
 ifneq ($(wildcard /lib/ld-uClibc.so.0),)
@@ -91,7 +93,7 @@ ARM_EABI_CROSS = arm-eabi-tcc$(EXESUF)
 ARM_CROSS = $(ARM_FPA_CROSS) $(ARM_FPA_LD_CROSS) $(ARM_VFP_CROSS) $(ARM_EABI_CROSS)
 C67_CROSS = c67-tcc$(EXESUF)
 
-CORE_FILES = tcc.c libtcc.c tccpp.c tccgen.c tccelf.c tccasm.c tccrun.c
+CORE_FILES += tcc.c libtcc.c tccpp.c tccgen.c tccelf.c tccasm.c tccrun.c
 CORE_FILES += tcc.h config.h libtcc.h tcctok.h
 I386_FILES = $(CORE_FILES) i386-gen.c i386-asm.c i386-asm.h i386-tok.h
 WIN32_FILES = $(CORE_FILES) i386-gen.c i386-asm.c i386-asm.h i386-tok.h tccpe.c

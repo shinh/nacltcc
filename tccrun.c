@@ -739,9 +739,39 @@ const char *dlerror(void)
 }
 */
 typedef struct TCCSyms {
-    char *str;
+    const char *str;
     void *ptr;
 } TCCSyms;
+
+#ifdef __native_client__
+
+extern TCCSyms tcc_syms[];
+extern int tcc_nb_syms;
+
+static int compare_sym(const void *sym1, const void *sym2)
+{
+    return strcmp(((const TCCSyms *)sym1)->str, ((const TCCSyms *)sym2)->str);
+}
+
+ST_FUNC void *resolve_sym(TCCState *s1, const char *name)
+{
+    TCCSyms sym, *resolved;
+
+    sym.str = name;
+    resolved = (TCCSyms *)bsearch(&sym, tcc_syms, tcc_nb_syms, sizeof(TCCSyms),
+                                  &compare_sym);
+    if (resolved) {
+        return resolved->ptr;
+    }
+
+    if (!strcmp(name, "_impure_ptr")) {
+        return &_impure_ptr;
+    }
+
+    return NULL;
+}
+
+#else
 
 #define TCCSYM(a) { #a, &a, },
 
@@ -768,18 +798,13 @@ ST_FUNC void *resolve_sym(TCCState *s1, const char *symbol)
     return NULL;
 }
 
+#endif
+
 #elif !defined(_WIN32)
 
 ST_FUNC void *resolve_sym(TCCState *s1, const char *sym)
 {
-#ifdef __native_client__
-    if (!strcmp(sym, "puts")) {
-        return &puts;
-    }
-    return NULL;
-#else
     return dlsym(RTLD_DEFAULT, sym);
-#endif
 }
 
 #endif /* CONFIG_TCC_STATIC */
