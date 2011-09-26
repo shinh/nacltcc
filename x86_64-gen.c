@@ -242,7 +242,7 @@ static int is_sse_float(int t) {
 ST_FUNC int oad(int c, int s)
 {
     int ind1;
-
+    op(5);
     o(c);
     ind1 = ind + 4;
     if (ind1 > cur_text_section->data_allocated)
@@ -335,10 +335,40 @@ static void gen_modrm_impl(int op_reg, int r, Sym *sym, int c, int is_got)
     }
 }
 
+#ifdef __native_client__
+static int gen_nacl_modrm(int opcode, int op_reg, int r, int c)
+{
+    int mod;
+    g(0x89);
+    g(0xc0 | (REG_VALUE(op_reg) << 3) | REG_VALUE(r));
+
+    if ((r & VT_VALMASK) < TREG_MEM)
+        c = 0;
+    g(0x40 | REX_BASE(r) | (REX_BASE(op_reg) << 1) | 1);
+    g(opcode);
+    mod = c ? 0x80 : 0;
+    g(mod | (REG_VALUE(op_reg) << 3) | 0x4);
+    g(0 | (REG_VALUE(r) << 3) | 0x7);
+    if (c) {
+        gen_le32(c);
+    }
+}
+#endif
+
 /* generate a modrm reference. 'op_reg' contains the addtionnal 3
    opcode bits */
 static void gen_modrm(int op_reg, int r, Sym *sym, int c)
 {
+#ifdef __native_client__
+    //printf("gen_modrm: ind=%x op_reg=%d r=%d c=%d\n", ind, op_reg, r, c);
+    int v = r & VT_VALMASK;
+    if (v != VT_CONST && v != VT_LOCAL) {
+        int opcode = cur_text_section->data[ind-1];
+        ind--;
+        gen_nacl_modrm(opcode, op_reg, r, c);
+        return;
+    }
+#endif
     gen_modrm_impl(op_reg, r, sym, c, 0);
 }
 
@@ -348,6 +378,14 @@ static void gen_modrm64(int opcode, int op_reg, int r, Sym *sym, int c)
 {
     int is_got;
     is_got = (op_reg & TREG_MEM) && !(sym->type.t & VT_STATIC);
+#ifdef __native_client__
+    //printf("gen_modrm64: ind=%x op_reg=%d r=%d c=%d\n", ind, op_reg, r, c);
+    int v = r & VT_VALMASK;
+    if (v != VT_CONST && v != VT_LOCAL) {
+        gen_nacl_modrm(opcode, op_reg, r, c);
+        return;
+    }
+#endif
     orex(1, r, op_reg, opcode);
     gen_modrm_impl(op_reg, r, sym, c, is_got);
 }
@@ -364,11 +402,12 @@ void load(int r, SValue *sv)
     sv = pe_getimport(sv, &v2);
 #endif
 
-    op(6);
+    op(10);
 
     fr = sv->r;
     ft = sv->type.t;
     fc = sv->c.ul;
+    //printf("load: ind=%d fr=%d ft=%d fc=%d\n", ind, fr, ft, fc);
 
 #ifndef TCC_TARGET_PE
     /* we use indirect access via got */
@@ -395,6 +434,7 @@ void load(int r, SValue *sv)
             v1.r = VT_LOCAL | VT_LVAL;
             v1.c.ul = fc;
             load(r, &v1);
+            op(10);
             fr = r;
         }
         ll = 0;
@@ -500,7 +540,7 @@ void store(int r, SValue *v)
     v = pe_getimport(v, &v2);
 #endif
 
-    op(6);
+    op(10);
 
     ft = v->type.t;
     fc = v->c.ul;
@@ -592,6 +632,7 @@ static void gcall_or_jmp(int is_jmp)
         /* otherwise, indirect call */
         r = TREG_R11;
         load(r, vtop);
+        op(3);
         o(0x41); /* REX */
         o(0xff); /* call/jmp *r */
         o(0xd0 + REG_VALUE(r) + (is_jmp << 4));
