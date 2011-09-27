@@ -130,7 +130,7 @@ void opadding()
 }
 #endif
 
-void op(int n)
+void gp(int n)
 {
 #ifdef __native_client__
     if ((ind & 31) + n > 32) {
@@ -158,7 +158,7 @@ void o(unsigned int c)
         v = v >> 8;
         n++;
     }
-    op(n);
+    gp(n);
 #endif
     while (c) {
         g(c);
@@ -242,7 +242,7 @@ static int is_sse_float(int t) {
 ST_FUNC int oad(int c, int s)
 {
     int ind1;
-    op(5);
+    gp(5);
     o(c);
     ind1 = ind + 4;
     if (ind1 > cur_text_section->data_allocated)
@@ -403,7 +403,7 @@ void load(int r, SValue *sv)
     sv = pe_getimport(sv, &v2);
 #endif
 
-    op(10);
+    gp(10);
 
     fr = sv->r;
     ft = sv->type.t;
@@ -435,7 +435,7 @@ void load(int r, SValue *sv)
             v1.r = VT_LOCAL | VT_LVAL;
             v1.c.ul = fc;
             load(r, &v1);
-            op(10);
+            gp(10);
             fr = r;
         }
         ll = 0;
@@ -541,7 +541,7 @@ void store(int r, SValue *v)
     v = pe_getimport(v, &v2);
 #endif
 
-    op(10);
+    gp(10);
 
     ft = v->type.t;
     fc = v->c.ul;
@@ -617,6 +617,8 @@ static void gcall_or_jmp(int is_jmp)
         if (!is_jmp) {
             while ((ind + 5) & 31)
                 g(0x90);
+        } else {
+            gp(5);
         }
         /* constant case */
         if (vtop->r & VT_SYM) {
@@ -633,7 +635,7 @@ static void gcall_or_jmp(int is_jmp)
         /* otherwise, indirect call */
         r = TREG_R11;
         load(r, vtop);
-        op(3);
+        gp(3);
         o(0x41); /* REX */
         o(0xff); /* call/jmp *r */
         o(0xd0 + REG_VALUE(r) + (is_jmp << 4));
@@ -1195,12 +1197,12 @@ void gfunc_epilog(void)
     o(0xec8948);
     o(0x5b41);
     /* naclrestbp */
-    op(6);
+    gp(6);
     o(0xdd8944);
     o(0xfd014c);
     o(0x5b41);
     /* nacljmp (ret) */
-    op(10);
+    gp(10);
     o(0xe0e38341);
     o(0xfb014d);
     o(0xe3ff41);
@@ -1222,7 +1224,7 @@ void gfunc_epilog(void)
     o(0xe5894855);  /* push %rbp, mov %rsp, %rbp */
 #ifdef __native_client__
     /* naclasp */
-    op(9);
+    gp(9);
     o(0xec81);    /* sub esp, stacksize */
     gen_le32(v);
     o(0xfc014c);  /* add rsp, r15 */
@@ -1247,6 +1249,7 @@ void gjmp_addr(int a)
     int r;
     r = a - ind - 2;
     if (r == (char)r) {
+        gp(2);
         g(0xeb);
         g(r);
     } else {
@@ -1259,6 +1262,7 @@ int gtst(int inv, int t)
 {
     int v, *p;
 
+    gp(10);
     v = vtop->r & VT_VALMASK;
     if (v == VT_CMP) {
         /* fast case : can jump directly since flags are set */
@@ -1305,6 +1309,8 @@ void gen_opi(int op)
     int r, fr, opc, c;
     int ll, uu, cc;
 
+    gp(10);
+
     ll = is64_type(vtop[-1].type.t);
     uu = (vtop[-1].type.t & VT_UNSIGNED) != 0;
     cc = (vtop->r & (VT_VALMASK | VT_LVAL | VT_SYM)) == VT_CONST;
@@ -1319,6 +1325,7 @@ void gen_opi(int op)
             vswap();
             r = gv(RC_INT);
             vswap();
+            gp(10);
             c = vtop->c.i;
             if (c == (char)c) {
                 /* XXX: generate inc and dec for smaller code ? */
@@ -1331,6 +1338,7 @@ void gen_opi(int op)
             }
         } else {
             gv2(RC_INT, RC_INT);
+            gp(10);
             r = vtop[-1].r;
             fr = vtop[0].r;
             orex(ll, r, fr, (opc << 3) | 0x01);
@@ -1363,6 +1371,7 @@ void gen_opi(int op)
         goto gen_op8;
     case '*':
         gv2(RC_INT, RC_INT);
+        gp(10);
         r = vtop[-1].r;
         fr = vtop[0].r;
         orex(ll, fr, r, 0xaf0f); /* imul fr, r */
@@ -1384,12 +1393,14 @@ void gen_opi(int op)
             vswap();
             r = gv(RC_INT);
             vswap();
+            gp(10);
             orex(ll, r, 0, 0xc1); /* shl/shr/sar $xxx, r */
             o(opc | REG_VALUE(r));
             g(vtop->c.i & (ll ? 63 : 31));
         } else {
             /* we generate the shift in ecx */
             gv2(RC_INT, RC_RCX);
+            gp(10);
             r = vtop[-1].r;
             orex(ll, r, 0, 0xd3); /* shl/shr/sar %cl, r */
             o(opc | REG_VALUE(r));
@@ -1408,10 +1419,12 @@ void gen_opi(int op)
         /* first operand must be in eax */
         /* XXX: need better constraint for second operand */
         gv2(RC_RAX, RC_RCX);
+        gp(10);
         r = vtop[-1].r;
         fr = vtop[0].r;
         vtop--;
         save_reg(TREG_RDX);
+        gp(10);
         orex(ll, 0, 0, uu ? 0xd231 : 0x99); /* xor %edx,%edx : cqto */
         orex(ll, fr, 0, 0xf7); /* div fr, %eax */
         o((uu ? 0xf0 : 0xf8) + REG_VALUE(fr));
@@ -1441,11 +1454,13 @@ void gen_opf(int op)
     int float_type =
         (vtop->type.t & VT_BTYPE) == VT_LDOUBLE ? RC_ST0 : RC_FLOAT;
 
+    gp(10);
     /* convert constants to memory references */
     if ((vtop[-1].r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
         vswap();
         gv(float_type);
         vswap();
+        gp(10);
     }
     if ((vtop[0].r & (VT_VALMASK | VT_LVAL)) == VT_CONST)
         gv(float_type);
@@ -1456,6 +1471,7 @@ void gen_opf(int op)
         vswap();
         gv(float_type);
         vswap();
+        gp(10);
     }
     swapped = 0;
     /* swap the stack if needed so that t1 is the register and t2 is
@@ -1468,7 +1484,9 @@ void gen_opf(int op)
         if (op >= TOK_ULT && op <= TOK_GT) {
             /* load on stack second operand */
             load(TREG_ST0, vtop);
+            gp(10);
             save_reg(TREG_RAX); /* eax is used by FP comparison code */
+            gp(10);
             if (op == TOK_GE || op == TOK_GT)
                 swapped = !swapped;
             else if (op == TOK_EQ || op == TOK_NE)
@@ -1497,6 +1515,7 @@ void gen_opf(int op)
         } else {
             /* no memory reference possible for long double operations */
             load(TREG_ST0, vtop);
+            gp(10);
             swapped = !swapped;
 
             switch(op) {
@@ -1536,6 +1555,7 @@ void gen_opf(int op)
                 v1.r = VT_LOCAL | VT_LVAL;
                 v1.c.ul = fc;
                 load(r, &v1);
+                gp(10);
                 fc = 0;
             }
 
@@ -1575,6 +1595,7 @@ void gen_opf(int op)
             /* no memory reference possible for long double operations */
             if ((vtop->type.t & VT_BTYPE) == VT_LDOUBLE) {
                 load(TREG_XMM0, vtop);
+                gp(10);
                 swapped = !swapped;
             }
             switch(op) {
@@ -1603,10 +1624,12 @@ void gen_opf(int op)
                 if ((r & VT_VALMASK) == VT_LLOCAL) {
                     SValue v1;
                     r = get_reg(RC_INT);
+                    gp(10);
                     v1.type.t = VT_INT;
                     v1.r = VT_LOCAL | VT_LVAL;
                     v1.c.ul = fc;
                     load(r, &v1);
+                    gp(10);
                     fc = 0;
                 }
                 if (swapped) {
@@ -1614,6 +1637,7 @@ void gen_opf(int op)
                     o(0x7e0ff3);
                     o(0xc8);
                     load(TREG_XMM0, vtop);
+                    gp(10);
                     /* subsd  %xmm1,%xmm0 (f2 0f 5c c1) */
                     if ((ft & VT_BTYPE) == VT_DOUBLE) {
                         o(0xf2);
@@ -1646,6 +1670,7 @@ void gen_cvt_itof(int t)
     if ((t & VT_BTYPE) == VT_LDOUBLE) {
         save_reg(TREG_ST0);
         gv(RC_INT);
+        gp(10);
         if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
             /* signed long long to float/double/long double (unsigned case
                is handled generically) */
@@ -1670,6 +1695,7 @@ void gen_cvt_itof(int t)
     } else {
         save_reg(TREG_XMM0);
         gv(RC_INT);
+        gp(10);
         o(0xf2 + ((t & VT_BTYPE) == VT_FLOAT));
         if ((vtop->type.t & (VT_BTYPE | VT_UNSIGNED)) ==
             (VT_INT | VT_UNSIGNED) ||
@@ -1693,6 +1719,7 @@ void gen_cvt_ftof(int t)
 
     if (bt == VT_FLOAT) {
         gv(RC_FLOAT);
+        gp(10);
         if (tbt == VT_DOUBLE) {
             o(0xc0140f); /* unpcklps */
             o(0xc05a0f); /* cvtps2pd */
@@ -1705,6 +1732,7 @@ void gen_cvt_ftof(int t)
         }
     } else if (bt == VT_DOUBLE) {
         gv(RC_FLOAT);
+        gp(10);
         if (tbt == VT_FLOAT) {
             o(0xc0140f66); /* unpcklpd */
             o(0xc05a0f66); /* cvtpd2ps */
@@ -1717,6 +1745,7 @@ void gen_cvt_ftof(int t)
         }
     } else {
         gv(RC_ST0);
+        gp(10);
         if (tbt == VT_DOUBLE) {
             o(0xf0245cdd); /* fstpl -0x10(%rsp) */
             /* movsd -0x10(%rsp),%xmm0 */
@@ -1751,6 +1780,7 @@ void gen_cvt_ftoi(int t)
         size = 4;
 
     r = get_reg(RC_INT);
+    gp(10);
     if (bt == VT_FLOAT) {
         o(0xf3);
     } else if (bt == VT_DOUBLE) {
