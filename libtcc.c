@@ -1033,6 +1033,19 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
 {
     int i;
 
+    for(i = 1; i < s1->nb_sections; i++) {
+        Section *s = s1->sections[i];
+        if (0 == (s->sh_flags & SHF_ALLOC))
+            continue;
+        if (s->sh_flags & SHF_EXECINSTR) {
+            nacl_dyncode_delete((void *)s->sh_addr,
+                                (s->data_offset + 31) & ~31);
+        } else if (s->data_offset) {
+            munmap((void *)s->sh_addr,
+                   (s->data_offset + 0xffff) & ~0xffff);
+        }
+    }
+
     tcc_cleanup();
 
     /* free all sections */
@@ -1074,9 +1087,7 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
 #ifdef HAVE_SELINUX
     munmap (s1->write_mem, s1->mem_size);
     munmap (s1->runtime_mem, s1->mem_size);    
-#elif defined(__native_client__)
-    /* XXX: nacl_dyncode_delete(s1->runtime_mem, XXX); */
-#else
+#elif !defined(__native_client__)
     tcc_free(s1->runtime_mem);
 #endif
     tcc_free(s1);

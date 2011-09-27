@@ -208,7 +208,7 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
             continue;
         length = s->data_offset;
         // printf("%-12s %08x %04x\n", s->name, s->sh_addr, length);
-        ptr = (void*)(uplong)s->sh_addr;
+        ptr = (void *)(uplong)s->sh_addr;
 #ifdef __native_client__
         if (s->sh_flags & SHF_EXECINSTR) {
             /* XXX: just for debugging... disable this */
