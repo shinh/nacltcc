@@ -2010,8 +2010,12 @@ ST_FUNC int type_size(CType *type, int *a)
 
             return ts * s->c;
         } else {
+#ifdef __native_client__
+            return *a = 4;
+#else
             *a = PTR_SIZE;
             return PTR_SIZE;
+#endif
         }
     } else if (bt == VT_LDOUBLE) {
         *a = LDOUBLE_ALIGN;

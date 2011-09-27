@@ -1062,7 +1062,13 @@ void gfunc_prolog(CType *func_type)
 
     sym = func_type->ref;
     addr = PTR_SIZE * 2;
+#ifdef __native_client__
+    /* The space for the return address */
+    /* XXX: there should be better place to adjust this value... */
+    loc = -4;
+#else
     loc = 0;
+#endif
     ind += FUNC_PROLOG_SIZE;
     func_sub_sp_offset = ind;
     func_ret_sub = 0;
