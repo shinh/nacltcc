@@ -381,6 +381,7 @@ static void gen_modrm64(int opcode, int op_reg, int r, Sym *sym, int c)
 #ifdef __native_client__
     //printf("gen_modrm64: ind=%x op_reg=%d r=%d c=%d\n", ind, op_reg, r, c);
     int v = r & VT_VALMASK;
+    is_got = 0;
     if (v != VT_CONST && v != VT_LOCAL) {
         gen_nacl_modrm(opcode, op_reg, r, c);
         return;
@@ -409,7 +410,7 @@ void load(int r, SValue *sv)
     fc = sv->c.ul;
     //printf("load: ind=%d fr=%d ft=%d fc=%d\n", ind, fr, ft, fc);
 
-#ifndef TCC_TARGET_PE
+#if !defined(TCC_TARGET_PE) && !defined(__native_client__)
     /* we use indirect access via got */
     if ((fr & VT_VALMASK) == VT_CONST && (fr & VT_SYM) &&
         (fr & VT_LVAL) && !(sv->sym->type.t & VT_STATIC)) {
@@ -465,7 +466,7 @@ void load(int r, SValue *sv)
     } else {
         if (v == VT_CONST) {
             if (fr & VT_SYM) {
-#ifdef TCC_TARGET_PE
+#if defined(TCC_TARGET_PE) || defined(__native_client__)
                 orex(1,0,r,0x8d);
                 o(0x05 + REG_VALUE(r) * 8); /* lea xx(%rip), r */
                 gen_addrpc32(fr, sv->sym, fc);
@@ -547,7 +548,7 @@ void store(int r, SValue *v)
     fr = v->r & VT_VALMASK;
     bt = ft & VT_BTYPE;
 
-#ifndef TCC_TARGET_PE
+#if !defined(TCC_TARGET_PE) && !defined(__native_client__)
     /* we need to access the variable via got */
     if (fr == VT_CONST && (v->r & VT_SYM)) {
         /* mov xx(%rip), %r11 */
