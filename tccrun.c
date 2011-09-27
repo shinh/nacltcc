@@ -147,7 +147,9 @@ static int tcc_relocate_ex(TCCState *s1, void *ptr)
 #ifdef TCC_TARGET_PE
         pe_output_file(s1, NULL);
 #else
+#ifndef __native_client__
         tcc_add_runtime(s1);
+#endif
         relocate_common_syms();
         tcc_add_linker_symbols(s1);
         build_got_entries(s1);
