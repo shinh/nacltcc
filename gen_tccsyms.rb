@@ -1,24 +1,30 @@
 #!/usr/bin/env ruby
 
 nacl_sdk_root = ARGV[0]
-nacl_toolchain_root="#{nacl_sdk_root}/toolchain/linux_x86"
-#nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib"
-nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib32"
-#$nacl_gcc="#{nacl_toolchain_root}/bin/x86_64-nacl-gcc"
-$nacl_gcc="#{nacl_toolchain_root}/bin/i686-nacl-gcc"
-#$nacl_nm="#{nacl_toolchain_root}/bin/x86_64-nacl-nm"
-$nacl_nm="#{nacl_toolchain_root}/bin/i686-nacl-nm"
+nacl_toolchain_root=Dir.glob("#{nacl_sdk_root}/toolchain/*")[0]
+
+is_32bit = true
+
+if is_32bit
+  $nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib32"
+  $nacl_gcc="#{nacl_toolchain_root}/bin/i686-nacl-gcc"
+  $nacl_nm="#{nacl_toolchain_root}/bin/i686-nacl-nm"
+else
+  $nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib"
+  $nacl_gcc="#{nacl_toolchain_root}/bin/x86_64-nacl-gcc"
+  $nacl_nm="#{nacl_toolchain_root}/bin/x86_64-nacl-nm"
+end
 
 syms = []
 IO.popen([$nacl_nm,
-          "#{nacl_lib_dir}/libcrt_common.a",
-          "#{nacl_lib_dir}/libcrt_platform.a",
-          "#{nacl_lib_dir}/libnacl.a",
-          "#{nacl_lib_dir}/libm.a",
-          "#{nacl_lib_dir}/link_segment_gap.o",
-          "#{nacl_lib_dir}/libppapi_stub.a",
-          "#{nacl_lib_dir}/libpthread.a",
-          "#{nacl_lib_dir}/libnacl_dyncode.a",
+          "#{$nacl_lib_dir}/libcrt_common.a",
+          "#{$nacl_lib_dir}/libcrt_platform.a",
+          "#{$nacl_lib_dir}/libnacl.a",
+          "#{$nacl_lib_dir}/libm.a",
+          "#{$nacl_lib_dir}/link_segment_gap.o",
+          "#{$nacl_lib_dir}/libppapi_stub.a",
+          "#{$nacl_lib_dir}/libpthread.a",
+          "#{$nacl_lib_dir}/libnacl_dyncode.a",
          ] * ' ') do |pipe|
   pipe.each do |line|
     a = line.split
@@ -37,7 +43,7 @@ end
 
 syms = syms.sort.uniq
 
-File.open('conftset.c', 'w') do |of|
+File.open('conftest.c', 'w') do |of|
   of.puts('int main() {}')
 end
 
