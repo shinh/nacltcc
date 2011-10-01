@@ -159,7 +159,9 @@ for opt do
   ;;
   --enable-cygwin) mingw32="yes" ; cygwin="yes" ; cross_prefix="mingw32-" ; cpu=x86
   ;;
-  --enable-nacl) nacl="yes" ; cpu=x86-64 ; noldl="yes"
+  --enable-nacl) nacl="yes" ; cpu=x86 ; noldl="yes"
+  ;;
+  --enable-nacl64) nacl="yes" ; cpu=x86-64 ; noldl="yes"
   ;;
   --enable-cross) build_cross="yes"
   ;;

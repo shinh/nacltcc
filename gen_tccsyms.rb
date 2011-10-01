@@ -2,11 +2,15 @@
 
 nacl_sdk_root = ARGV[0]
 nacl_toolchain_root="#{nacl_sdk_root}/toolchain/linux_x86"
-nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib"
-$nacl_gcc="#{nacl_toolchain_root}/bin/x86_64-nacl-gcc"
+#nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib"
+nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib32"
+#$nacl_gcc="#{nacl_toolchain_root}/bin/x86_64-nacl-gcc"
+$nacl_gcc="#{nacl_toolchain_root}/bin/i686-nacl-gcc"
+#$nacl_nm="#{nacl_toolchain_root}/bin/x86_64-nacl-nm"
+$nacl_nm="#{nacl_toolchain_root}/bin/i686-nacl-nm"
 
 syms = []
-IO.popen(["#{nacl_toolchain_root}/bin/x86_64-nacl-nm",
+IO.popen([$nacl_nm,
           "#{nacl_lib_dir}/libcrt_common.a",
           "#{nacl_lib_dir}/libcrt_platform.a",
           "#{nacl_lib_dir}/libnacl.a",
@@ -43,7 +47,8 @@ def gen_tccsyms(syms)
       of.puts('TCCSYM(' + sym + ')')
     end
   end
-  `#{$nacl_gcc} tccsyms.c conftest.c -m64 -lm -lppapi -lnacl_dyncode 2>&1`
+  #`#{$nacl_gcc} tccsyms.c conftest.c -m64 -lm -lppapi -lnacl_dyncode 2>&1`
+  `#{$nacl_gcc} tccsyms.c conftest.c -m32 -lm -lppapi -lnacl_dyncode 2>&1`
 end
 
 prev_undefines = 0

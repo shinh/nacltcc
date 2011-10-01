@@ -143,6 +143,10 @@ ifdef CONFIG_UCLIBC
 BCHECK_O=
 endif
 
+ifdef CONFIG_NACL
+BCHECK_O=
+endif
+
 ifdef CONFIG_USE_LIBGCC
 LIBTCC1=
 endif

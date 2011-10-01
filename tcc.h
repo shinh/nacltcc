@@ -119,7 +119,8 @@
 #endif
 
 #if !defined(TCC_UCLIBC) && !defined(TCC_TARGET_ARM) && \
-    !defined(TCC_TARGET_C67) && !defined(TCC_TARGET_X86_64)
+    !defined(TCC_TARGET_C67) && !defined(TCC_TARGET_X86_64) && \
+    !defined(__native_client__)
 #define CONFIG_TCC_BCHECK /* enable bound checking code */
 #endif
 
