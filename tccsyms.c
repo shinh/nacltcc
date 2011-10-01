@@ -1,3 +1,9 @@
+/*
+ *  A table for the all symbols defined in tcc binary
+ *
+ *  Copyright (c) 2008 Shinichiro Hamaji
+ *
+ */
 typedef struct TCCSyms {
     char *str;
     void *ptr;

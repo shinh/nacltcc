@@ -1,30 +1,39 @@
 #!/usr/bin/env ruby
+#
+# A generator to create the list of symbols tcc has
+#
+#  Copyright (c) 2011 Shinichiro Hamaji
+#
+# This script is intended to be invoked from nacl-configure
 
-nacl_sdk_root = ARGV[0]
-nacl_toolchain_root=Dir.glob("#{nacl_sdk_root}/toolchain/*")[0]
-
-is_32bit = true
-
-if is_32bit
-  $nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib32"
-  $nacl_gcc="#{nacl_toolchain_root}/bin/i686-nacl-gcc"
-  $nacl_nm="#{nacl_toolchain_root}/bin/i686-nacl-nm"
-else
-  $nacl_lib_dir = "#{nacl_toolchain_root}/x86_64-nacl/lib"
-  $nacl_gcc="#{nacl_toolchain_root}/bin/x86_64-nacl-gcc"
-  $nacl_nm="#{nacl_toolchain_root}/bin/x86_64-nacl-nm"
+def get_env(key)
+  e = ENV[key]
+  if !e
+    puts "Environment variable #{key} is not set!"
+    exit 1
+  end
+  e
 end
+
+nacl_toolchain_root = get_env('NACL_TOOLCHAIN_ROOT')
+nacl_lib_dir = get_env('NACL_LIB_DIR')
+nacl_prefix = get_env('NACL_PREFIX')
+$nacl_gcc = "#{nacl_toolchain_root}/bin/#{nacl_prefix}gcc"
+$nacl_nm = "#{nacl_toolchain_root}/bin/#{nacl_prefix}nm"
+nacl_extra_ldflags = get_env('NACL_EXTRA_LDFLAGS')
+nacl_extra_cflags = get_env('NACL_EXTRA_CFLAGS')
+$nacl_flags = "#{nacl_extra_cflags} #{nacl_extra_ldflags}"
 
 syms = []
 IO.popen([$nacl_nm,
-          "#{$nacl_lib_dir}/libcrt_common.a",
-          "#{$nacl_lib_dir}/libcrt_platform.a",
-          "#{$nacl_lib_dir}/libnacl.a",
-          "#{$nacl_lib_dir}/libm.a",
-          "#{$nacl_lib_dir}/link_segment_gap.o",
-          "#{$nacl_lib_dir}/libppapi_stub.a",
-          "#{$nacl_lib_dir}/libpthread.a",
-          "#{$nacl_lib_dir}/libnacl_dyncode.a",
+          "#{nacl_lib_dir}/libcrt_common.a",
+          "#{nacl_lib_dir}/libcrt_platform.a",
+          "#{nacl_lib_dir}/libnacl.a",
+          "#{nacl_lib_dir}/libm.a",
+          "#{nacl_lib_dir}/link_segment_gap.o",
+          "#{nacl_lib_dir}/libppapi_stub.a",
+          "#{nacl_lib_dir}/libpthread.a",
+          "#{nacl_lib_dir}/libnacl_dyncode.a",
          ] * ' ') do |pipe|
   pipe.each do |line|
     a = line.split
@@ -53,8 +62,7 @@ def gen_tccsyms(syms)
       of.puts('TCCSYM(' + sym + ')')
     end
   end
-  #`#{$nacl_gcc} tccsyms.c conftest.c -m64 -lm -lppapi -lnacl_dyncode 2>&1`
-  `#{$nacl_gcc} tccsyms.c conftest.c -m32 -lm -lppapi -lnacl_dyncode 2>&1`
+  `#{$nacl_gcc} tccsyms.c conftest.c #{$nacl_flags} 2>&1`
 end
 
 prev_undefines = 0

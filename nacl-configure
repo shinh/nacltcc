@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# A ./configure wrapper for NaCl
+#
+#  Copyright (c) 2011 Shinichiro Hamaji
+#
+# Example usage:
+#
+# % export NACL_SDK_ROOT=$HOME/src/native_client_sdk_0_5_1052
+# % export NACL_PACKAGES_BITSIZE=64  # not mandatory - 32bit by default.
+# % ./nacl-configure
+
+set -e
+
+if [ "x$NACL_SDK_ROOT" = "x" ]; then
+    echo NACL_SDK_ROOT isn\'t set
+    exit 1
+fi
+
+if [ "x$NACL_TOOLCHAIN_ROOT" = "x" ]; then
+    export NACL_TOOLCHAIN_ROOT="$(ls -d $NACL_SDK_ROOT/toolchain/* | grep -v _newlib)"
+    if [ "x$NACL_TOOLCHAIN_ROOT" = "x" ]; then
+        echo "Failed to detect NACL_TOOLCHAIN_ROOT in $NACL_SDK_ROOT/toolchain."
+        echo "Set this environment variable manually."
+        exit 1
+    fi
+    if echo $NACL_TOOLCHAIN_ROOT | grep ' '; then
+        echo "Multiple NACL_TOOLCHAIN_ROOT detected ($NACL_TOOLCHAIN_ROOT)"
+        echo "Set this environment manually."
+        exit 1
+    fi
+fi
+
+export NACL_PACKAGES_BITSIZE=${NACL_PACKAGES_BITSIZE:-"32"}
+if [ $NACL_PACKAGES_BITSIZE = "32" ] ; then
+    export NACL_LIB_DIR=${NACL_LIB_DIR:-"$NACL_TOOLCHAIN_ROOT/x86_64-nacl/lib32"}
+    export NACL_PREFIX=${NACL_PREFIX:-"i686-nacl-"}
+elif [ $NACL_PACKAGES_BITSIZE = "64" ] ; then
+    export NACL_LIB_DIR=${NACL_LIB_DIR:-"$NACL_TOOLCHAIN_ROOT/x86_64-nacl/lib64"}
+    export NACL_PREFIX=${NACL_PREFIX:-"x86_64-nacl-"}
+    export NACL_ENABLE_SUFFIX=64
+else
+    "Unknown value for NACL_PACKAGES_BITSIZE: '$NACL_PACKAGES_BITSIZE'"
+    exit -1
+fi
+export NACL_INCLUDE_DIR=${NACL_INCLUDE_DIR:-"$NACL_TOOLCHAIN_ROOT/x86_64-nacl/include"}
+export TCC_PREFIX=${TCC_PREFIX:-$NACL_PREFIX}
+
+export CONFIG_TCCDIR=${CONFIG_TCCDIR:-"${NACL_LIB_DIR}/${TCC_PREFIX}tcc"}
+
+EXTRA_LDFLAGS="$EXTRA_LDFLAGS -m$NACL_PACKAGES_BITSIZE"
+EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lm -lppapi -lnacl_dyncode"
+EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,--section-start,.rodata=0x10000000"
+export NACL_EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
+
+EXTRA_CFLAGS="$EXTRA_CFLAGS -DCONFIG_TCCDIR='\"${CONFIG_TCCDIR}\"'"
+EXTRA_CFLAGS="$EXTRA_CFLAGS -DCONFIG_TCC_SYSINCLUDEPATHS='\"${NACL_INCLUDE_DIR}:{B}/include\"'"
+export NACL_EXTRA_CFLAGS="$EXTRA_CFLAGS"
+
+echo "=== CONFIGURATION ==="
+echo NACL_SDK_ROOT=$NACL_SDK_ROOT
+echo NACL_PACKAGES_BITSIZE=$NACL_PACKAGES_BITSIZE
+echo NACL_TOOLCHAIN_ROOT=$NACL_TOOLCHAIN_ROOT
+echo NACL_LIB_DIR=$NACL_LIB_DIR
+echo NACL_PREFIX=$NACL_PREFIX
+echo NACL_EXTRA_LDFLAGS=$NACL_EXTRA_LDFLAGS
+echo NACL_EXTRA_CFLAGS=$NACL_EXTRA_CFLAGS
+echo TCC_PREFIX=$TCC_PREFIX
+echo CONFIG_TCCDIR=$CONFIG_TCCDIR
+echo "====================="
+
+./gen_tccsyms.rb
+
+set -x
+./configure \
+    --enable-nacl$NACL_ENABLE_SUFFIX \
+    --cc=$NACL_TOOLCHAIN_ROOT/bin/${NACL_PREFIX}gcc \
+    --ar=$NACL_TOOLCHAIN_ROOT/bin/${NACL_PREFIX}ar \
+    --extra-ldflags="$NACL_EXTRA_LDFLAGS" \
+    --extra-cflags="$NACL_EXTRA_CFLAGS"
