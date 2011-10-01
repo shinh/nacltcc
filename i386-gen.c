@@ -131,6 +131,14 @@ ST_FUNC void g(int c)
 
 ST_FUNC void o(unsigned int c)
 {
+#ifdef __native_client__
+    unsigned int n = 0, v = c;
+    while (v) {
+        v = v >> 8;
+        n++;
+    }
+    gp(n);
+#endif
     while (c) {
         g(c);
         c = c >> 8;
@@ -177,6 +185,7 @@ ST_FUNC int oad(int c, int s)
 {
     int ind1;
 
+    gp(5);
     o(c);
     ind1 = ind + 4;
     if (ind1 > cur_text_section->data_allocated)
@@ -236,6 +245,8 @@ ST_FUNC void load(int r, SValue *sv)
     sv = pe_getimport(sv, &v2);
 #endif
 
+    gp(8);
+
     fr = sv->r;
     ft = sv->type.t;
     fc = sv->c.ul;
@@ -247,6 +258,7 @@ ST_FUNC void load(int r, SValue *sv)
             v1.r = VT_LOCAL | VT_LVAL;
             v1.c.ul = fc;
             load(r, &v1);
+            gp(8);
             fr = r;
         }
         if ((ft & VT_BTYPE) == VT_FLOAT) {
@@ -279,12 +291,14 @@ ST_FUNC void load(int r, SValue *sv)
             gen_modrm(r, VT_LOCAL, sv->sym, fc);
         } else if (v == VT_CMP) {
             oad(0xb8 + r, 0); /* mov $0, r */
+            gp(8);
             o(0x0f); /* setxx %br */
             o(fc);
             o(0xc0 + r);
         } else if (v == VT_JMP || v == VT_JMPI) {
             t = v & 1;
             oad(0xb8 + r, t); /* mov $1, r */
+            gp(8);
             o(0x05eb); /* jmp after */
             gsym(fc);
             oad(0xb8 + r, t ^ 1); /* mov $0, r */
@@ -304,6 +318,8 @@ ST_FUNC void store(int r, SValue *v)
     SValue v2;
     v = pe_getimport(v, &v2);
 #endif
+
+    gp(8);
 
     ft = v->type.t;
     fc = v->c.ul;
@@ -339,6 +355,7 @@ ST_FUNC void store(int r, SValue *v)
 
 static void gadd_sp(int val)
 {
+    gp(3);
     if (val == (char)val) {
         o(0xc483);
         g(val);
@@ -374,6 +391,7 @@ static void gcall_or_jmp(int is_jmp)
     } else {
         /* otherwise, indirect call */
         r = gv(RC_INT);
+        gp(5);
         o(0xff); /* call/jmp *r */
         o(0xd0 + r + (is_jmp << 4));
     }
@@ -400,6 +418,7 @@ ST_FUNC void gfunc_call(int nb_args)
             oad(0xec81, size); /* sub $xxx, %esp */
             /* generate structure store */
             r = get_reg(RC_INT);
+            gp(5);
             o(0x89); /* mov %esp, r */
             o(0xe0 + r);
             vset(&vtop->type, r | VT_LVAL, 0);
@@ -415,6 +434,7 @@ ST_FUNC void gfunc_call(int nb_args)
             else
                 size = 12;
             oad(0xec81, size); /* sub $xxx, %esp */
+            gp(6);
             if (size == 12)
                 o(0x7cdb);
             else
@@ -529,6 +549,7 @@ ST_FUNC void gfunc_prolog(CType *func_type)
         if (param_index < fastcall_nb_regs) {
             /* save FASTCALL register */
             loc -= 4;
+            gp(8);
             o(0x89);     /* movl */
             gen_modrm(fastcall_regs_ptr[param_index], VT_LOCAL, NULL, loc);
             param_addr = loc;
@@ -595,6 +616,7 @@ ST_FUNC void gfunc_epilog(void)
         greloc(cur_text_section, sym, 
                ind + 1, R_386_PC32);
         oad(0xe8, -4);
+        gp(2);
         o(0x585a); /* restore returned value, if any */
     }
 #endif
@@ -633,8 +655,9 @@ ST_FUNC void gfunc_epilog(void)
         greloc(cur_text_section, sym, ind-4, R_386_PC32);
     } else
 #endif
-    {
+    { 
         o(0xe58955);  /* push %ebp, mov %esp, %ebp */
+        gp(6);
         o(0xec81);  /* sub esp, stacksize */
         gen_le32(v);
 #if FUNC_PROLOG_SIZE == 10
@@ -656,6 +679,7 @@ ST_FUNC void gjmp_addr(int a)
     int r;
     r = a - ind - 2;
     if (r == (char)r) {
+        gp(2);
         g(0xeb);
         g(r);
     } else {
@@ -668,6 +692,7 @@ ST_FUNC int gtst(int inv, int t)
 {
     int v, *p;
 
+    gp(8);
     v = vtop->r & VT_VALMASK;
     if (v == VT_CMP) {
         /* fast case : can jump directly since flags are set */
@@ -698,6 +723,7 @@ ST_FUNC int gtst(int inv, int t)
                 t = gjmp(t);
         } else {
             v = gv(RC_INT);
+            gp(3);
             o(0x85);
             o(0xc0 + v * 9);
             g(0x0f);
@@ -713,6 +739,8 @@ ST_FUNC void gen_opi(int op)
 {
     int r, fr, opc, c;
 
+    gp(8);
+
     switch(op) {
     case '+':
     case TOK_ADDC1: /* add with carry generation */
@@ -723,6 +751,7 @@ ST_FUNC void gen_opi(int op)
             vswap();
             r = gv(RC_INT);
             vswap();
+            gp(8);
             c = vtop->c.i;
             if (c == (char)c) {
                 /* generate inc and dec for smaller code */
@@ -741,6 +770,7 @@ ST_FUNC void gen_opi(int op)
             }
         } else {
             gv2(RC_INT, RC_INT);
+            gp(8);
             r = vtop[-1].r;
             fr = vtop[0].r;
             o((opc << 3) | 0x01);
@@ -773,6 +803,7 @@ ST_FUNC void gen_opi(int op)
         goto gen_op8;
     case '*':
         gv2(RC_INT, RC_INT);
+        gp(8);
         r = vtop[-1].r;
         fr = vtop[0].r;
         vtop--;
@@ -794,6 +825,7 @@ ST_FUNC void gen_opi(int op)
             vswap();
             r = gv(RC_INT);
             vswap();
+            gp(8);
             c = vtop->c.i & 0x1f;
             o(0xc1); /* shl/shr/sar $xxx, r */
             o(opc | r);
@@ -801,6 +833,7 @@ ST_FUNC void gen_opi(int op)
         } else {
             /* we generate the shift in ecx */
             gv2(RC_INT, RC_ECX);
+            gp(8);
             r = vtop[-1].r;
             o(0xd3); /* shl/shr/sar %cl, r */
             o(opc | r);
@@ -820,6 +853,7 @@ ST_FUNC void gen_opi(int op)
         fr = vtop[0].r;
         vtop--;
         save_reg(TREG_EDX);
+        gp(8);
         if (op == TOK_UMULL) {
             o(0xf7); /* mul fr */
             o(0xe0 + fr);
@@ -884,6 +918,7 @@ ST_FUNC void gen_opf(int op)
             swapped = !swapped;
         else if (op == TOK_EQ || op == TOK_NE)
             swapped = 0;
+        gp(8);
         if (swapped)
             o(0xc9d9); /* fxch %st(1) */
         o(0xe9da); /* fucompp */
@@ -933,6 +968,7 @@ ST_FUNC void gen_opf(int op)
         }
         ft = vtop->type.t;
         fc = vtop->c.ul;
+        gp(8);
         if ((ft & VT_BTYPE) == VT_LDOUBLE) {
             o(0xde); /* fxxxp %st, %st(1) */
             o(0xc1 + (a << 3));
@@ -975,6 +1011,7 @@ ST_FUNC void gen_cvt_itof(int t)
     } else if ((vtop->type.t & (VT_BTYPE | VT_UNSIGNED)) == 
                (VT_INT | VT_UNSIGNED)) {
         /* unsigned int to float/double/long double */
+        gp(2);
         o(0x6a); /* push $0 */
         g(0x00);
         o(0x50 + (vtop->r & VT_VALMASK)); /* push r */
@@ -1006,6 +1043,7 @@ ST_FUNC void gen_cvt_ftoi(int t)
     else 
         size = 4;
     
+    gp(6);
     o(0x2dd9); /* ldcw xxx */
     sym = external_global_sym(TOK___tcc_int_fpu_control, 
                               &ushort_type, VT_LVAL);
@@ -1014,6 +1052,7 @@ ST_FUNC void gen_cvt_ftoi(int t)
     gen_le32(0);
     
     oad(0xec81, size); /* sub $xxx, %esp */
+    gp(10);
     if (size == 4)
         o(0x1cdb); /* fistpl */
     else
