@@ -9,7 +9,7 @@ typedef __PTRDIFF_TYPE__ intptr_t;
 typedef __SIZE_TYPE__ uintptr_t;
 
 #ifndef __int8_t_defined
-#define __int8_t_defined
+#define __int8_t_defined 1
 typedef signed char int8_t;
 typedef signed short int int16_t;
 typedef signed int int32_t;
