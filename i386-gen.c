@@ -101,6 +101,23 @@ static int func_ret_sub;
 static unsigned long func_bound_offset;
 #endif
 
+#ifdef __native_client__
+void opadding()
+{
+    while (ind & 31)
+        g(0x90);
+}
+#endif
+
+void gp(int n)
+{
+#ifdef __native_client__
+    if ((ind & 31) + n > 32) {
+        opadding();
+    }
+#endif
+}
+
 /* XXX: make it faster ? */
 ST_FUNC void g(int c)
 {
@@ -335,6 +352,14 @@ static void gcall_or_jmp(int is_jmp)
 {
     int r;
     if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
+#ifdef __native_client__
+        if (!is_jmp) {
+            while ((ind + 5) & 31)
+                g(0x90);
+        } else {
+            gp(5);
+        }
+#endif
         /* constant case */
         if (vtop->r & VT_SYM) {
             /* relocation case */
@@ -575,11 +600,25 @@ ST_FUNC void gfunc_epilog(void)
 #endif
     o(0xc9); /* leave */
     if (func_ret_sub == 0) {
+#ifdef __native_client__
+        /* naclret */
+        gp(6);
+        o(0x59);
+        o(0xe0e183);
+        o(0xe1ff);
+
+        opadding();
+#else
         o(0xc3); /* ret */
+#endif
     } else {
+#ifdef __native_client__
+        tcc_error("not implemented (ret n)");
+#else
         o(0xc2); /* ret n */
         g(func_ret_sub);
         g(func_ret_sub >> 8);
+#endif
     }
     /* align local size to word & save local variables */
     
