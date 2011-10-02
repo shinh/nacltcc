@@ -1,91 +1,71 @@
-Tiny C Compiler - C Scripting Everywhere - The Smallest ANSI C compiler
------------------------------------------------------------------------
+See README.tcc for the original document
 
-Features:
---------
+This is an experimental port of tinycc (http://tinycc.org)
 
-- SMALL! You can compile and execute C code everywhere, for example on
-  rescue disks.
+You can run C source code on NaCl, which means, you can run C programs
+on your browser without interaction with servers.
 
-- FAST! tcc generates optimized x86 code. No byte code
-  overhead. Compile, assemble and link about 7 times faster than 'gcc
-  -O0'.
+The development is not completed at all. You may see weird errors even
+for simple programs. Especially, x86-64 support should be terrible.
+Also, this cannot generate NaCl ELF yet. It can only preprocess source
+code or run the source code directly.
 
-- UNLIMITED! Any C dynamic library can be used directly. TCC is
-  heading torward full ISOC99 compliance. TCC can of course compile
-  itself.
+* Demo
 
-- SAFE! tcc includes an optional memory and bound checker. Bound
-  checked code can be mixed freely with standard code.
+http://shinh.skr.jp/nacltcc/tinycc.html
 
-- Compile and execute C source directly. No linking or assembly
-  necessary. Full C preprocessor included. 
+* How to build
 
-- C script supported : just add '#!/usr/local/bin/tcc -run' at the first
-  line of your C source, and execute it directly from the command
-  line.
+- prerequisites
 
-Documentation:
--------------
+You need at least the followings:
 
-1) Installation on a i386 Linux host (for Windows read tcc-win32.txt)
+NaCl SDK (my version is native_client_sdk_0_5_105)
+ruby
+make, etc.
 
-   ./configure
-   make
-   make test
-   make install
+For web interface, you also need:
 
-By default, tcc is installed in /usr/local/bin.
-./configure --help  shows configuration options.
+naclports (my revision is 433)
+Chrome (tested on 15.0.874.5 dev on 64bit linux, 14.0.835.186 on 32bit mac)
 
+You need to set NACL_SDK_ROOT environment variable before the next step:
 
-2) Introduction
+% export NACL_SDK_ROOT=$HOME/src/native_client_sdk_0_5_1052
 
-We assume here that you know ANSI C. Look at the example ex1.c to know
-what the programs look like.
+- build the CLI version
 
-The include file <tcclib.h> can be used if you want a small basic libc
-include support (especially useful for floppy disks). Of course, you
-can also use standard headers, although they are slower to compile.
+% ./nacl-configure
+% make
 
-You can begin your C script with '#!/usr/local/bin/tcc -run' on the first
-line and set its execute bits (chmod a+x your_script). Then, you can
-launch the C code as a shell or perl script :-) The command line
-arguments are put in 'argc' and 'argv' of the main functions, as in
-ANSI C.
+This will build 32bit binary by default. Please specify
+NACL_PACKAGES_BITSIZE if you want 64bit binary:
 
-3) Examples
+% NACL_PACKAGES_BITSIZE=64 ./nacl-configure
+% make
 
-ex1.c: simplest example (hello world). Can also be launched directly
-as a script: './ex1.c'.
+- run the CLI version
 
-ex2.c: more complicated example: find a number with the four
-operations given a list of numbers (benchmark).
+% $NACL_SDK_ROOT/toolchain/*/bin/sel_ldr_x86_32 -a ./tcc -B. -run hello.c
 
-ex3.c: compute fibonacci numbers (benchmark).
+If you are using 64bit version, please use sel_ldr_x86_64 instead.
+Of course, you may want to replace * to your actual toolchain directory.
 
-ex4.c: more complicated: X11 program. Very complicated test in fact
-because standard headers are being used ! As for ex1.c, can also be launched
-directly as a script: './ex4.c'.
+- build the web version
 
-ex5.c: 'hello world' with standard glibc headers.
+Again, please note that you need naclports and NACL_SDK_ROOT
+environment variable.
 
-tcc.c: TCC can of course compile itself. Used to check the code
-generator.
+% cd demo
+% make
+% ./pack_data.sh path_to/naclports/src/libraries/nacl-mounts/util/simple_tar.py
 
-tcctest.c: auto test for TCC which tests many subtle possible bugs. Used
-when doing 'make test'.
+Then, put data.sar, tinycc.html, tinycc.nmf, and *.nexe in your web server.
 
-4) Full Documentation
+* Known issues
 
-Please read tcc-doc.html to have all the features of TCC.
+- 32bit version is crashing on my 64bit linux. I don't know why.
 
-Additional information is available for the Windows port in tcc-win32.txt.
+* License
 
-License:
--------
-
-TCC is distributed under the GNU Lesser General Public License (see
-COPYING file).
-
-Fabrice Bellard.
+TCC's (i.e., GPLv2)
