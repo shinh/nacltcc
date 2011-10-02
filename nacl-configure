@@ -72,6 +72,10 @@ echo NACL_SYMTAB=$NACL_SYMTAB
 echo CONFIG_TCCDIR=$CONFIG_TCCDIR
 echo "====================="
 
+if [ "x$FETCH_ENVS_ONLY" != "x" ]; then
+    return
+fi
+
 if [ ! -e $NACL_SYMTAB ]; then
     ./gen_tccsyms.rb
 fi
