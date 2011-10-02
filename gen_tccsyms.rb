@@ -23,6 +23,7 @@ $nacl_nm = "#{nacl_toolchain_root}/bin/#{nacl_prefix}nm"
 nacl_extra_ldflags = get_env('NACL_EXTRA_LDFLAGS')
 nacl_extra_cflags = get_env('NACL_EXTRA_CFLAGS')
 $nacl_flags = "#{nacl_extra_cflags} #{nacl_extra_ldflags}"
+$nacl_symtab = get_env('NACL_SYMTAB')
 
 syms = []
 IO.popen([$nacl_nm,
@@ -62,7 +63,8 @@ def gen_tccsyms(syms)
       of.puts('TCCSYM(' + sym + ')')
     end
   end
-  `#{$nacl_gcc} tccsyms.c conftest.c #{$nacl_flags} 2>&1`
+  cmd = "#{$nacl_gcc} tccsyms.c conftest.c #{$nacl_flags} -DNACL_SYMTAB='\"tccsyms.tab\"' 2>&1"
+  `#{cmd}`
 end
 
 prev_undefines = 0
@@ -104,5 +106,7 @@ if $? != 0
   puts errmsg
   exit 1
 end
+
+File.rename('tccsyms.tab', $nacl_symtab)
 
 puts 'DONE!'
