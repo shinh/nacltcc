@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tinycc!</title>
+  <title>Tinycc on NaCl</title>
+
+  <link rev="MADE" href="mailto:shinichiro.hamaji _at_ gmail.com">
+  <link rel="INDEX" href=".">
+  <link rel="stylesheet" type="text/css" href="/site.css">
 
   <script type="text/javascript">
     TinyccModule = null;  // Global application object.
@@ -79,10 +83,10 @@
 </head>
 <body onload="pageDidLoad()">
 
-<h1>Native Client Module Tinycc</h1>
+<h1>Tinycc on NaCl</h1>
 
-<h2>Status</h2>
-<div id="status_field">NO-STATUS</div>
+<h2 style="display: run-in">Status</h2>
+<div>&nbsp&nbsp&nbsp&nbsp<span id="status_field">NO-STATUS</div>
 
 <h2>Code</h2>
 
@@ -149,6 +153,29 @@ int main() {
        type="application/x-nacl" />
   </div>
 </p>
+
+<h2>What is this?</h2>
+
+<p>
+This is an experimental port of <a href="http://tinycc.org">tinycc</a>.
+
+<p>
+You can run C source code on NaCl, which means, you can run C programs
+on your browser without interaction with servers.
+Note that the development is not completed at all and you may see
+weird errors even for simple programs.
+
+<p>
+You can find the source code and documents from my
+<a href="https://github.com/shinh/nacltcc">github repository</a>
+
+<p>
+To try this, you might need Chrome 14 or later and enable native
+client (visit chrome://flags/ or set --enable-nacl).
+I tested this with Chrome 15.0.874.5 dev on 64bit linux and
+14.0.835.186 on 32bit mac.
+It seems 32bit nacl tcc crashes on my 64bit linux.
+So, this may not work on 32bit linux either.
 
 </body>
 </html>
