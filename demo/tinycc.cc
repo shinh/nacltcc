@@ -129,8 +129,8 @@ class TinyccInstance : public pp::Instance {
     TCCState* s1 = tcc_state.get();
     tcc_set_error_func(s1, this, &TinyccInstance::HandleTCCError);
     tcc_set_output_type(s1, output_type);
-    tcc_add_include_path(s1, "/usr/include");
-    tcc_add_include_path(s1, "/usr/lib/tcc/include");
+    tcc_add_include_path(s1, "/data/usr/include");
+    tcc_add_include_path(s1, "/data/usr/lib/tcc/include");
     tcc_add_file(s1, "/tmp/input.c");
     if (output_type == TCC_OUTPUT_OBJ) {
       tcc_output_file(s1, "/tmp/out");
@@ -198,13 +198,13 @@ class TinyccInstance : public pp::Instance {
   void InitFileSystem() {
     PostMessageFromThread("status:DOWNLOADING DATA");
     UrlLoaderJob *job = new UrlLoaderJob;
-    job->set_url("x86_64-nacl.sar?v16");
+    job->set_url("data.sar");
     std::vector<char> data;
     job->set_dst(&data);
     runner_->RunJob(job);
 
     PostMessageFromThread("status:WRITING DATA");
-    int fd = open("/x86_64-nacl.sar", O_CREAT | O_WRONLY);
+    int fd = open("/data.sar", O_CREAT | O_WRONLY);
     if (fd < 0) {
       PostMessageFromThread("status:WRITE DATA FAILED");
       return;
@@ -213,10 +213,10 @@ class TinyccInstance : public pp::Instance {
     close(fd);
 
     mkdir("/tmp", 0777);
-    mkdir("/usr", 0777);
-    chdir("/usr");
+    mkdir("/data", 0777);
+    chdir("/data");
     PostMessageFromThread("status:EXTRACTING DATA");
-    int r = simple_tar_extract("/x86_64-nacl.sar");
+    int r = simple_tar_extract("/data.sar");
     if (r != 0) {
       PostMessageFromThread("status:EXTRACT DATA FAILED");
     }
