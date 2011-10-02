@@ -61,6 +61,7 @@ environment variable.
 % ./pack_data.sh path_to/naclports/src/libraries/nacl-mounts/util/simple_tar.py
 
 Then, put data.sar, tinycc.html, tinycc.nmf, and *.nexe in your web server.
+Note that NaCl won't run on file:/// URLs.
 
 * Known issues
 
