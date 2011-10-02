@@ -82,4 +82,5 @@ set -x
     --cc=$NACL_TOOLCHAIN_ROOT/bin/${NACL_PREFIX}gcc \
     --ar=$NACL_TOOLCHAIN_ROOT/bin/${NACL_PREFIX}ar \
     --extra-ldflags="$NACL_EXTRA_LDFLAGS" \
-    --extra-cflags="$NACL_EXTRA_CFLAGS"
+    --extra-cflags="$NACL_EXTRA_CFLAGS" \
+    "$@"
