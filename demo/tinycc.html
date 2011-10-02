@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tinycc!</title>
+
+  <script type="text/javascript">
+    TinyccModule = null;  // Global application object.
+    statusText = 'NO-STATUS';
+
+    function run(cmd) {
+      if (!statusText.match('^READY')) {
+        document.getElementById('out').value = "NOT READY YET";
+      } else {
+        var msg = cmd + ':';
+        msg += document.getElementById('code').value;
+        TinyccModule.postMessage(msg);
+        updateStatus("RUNNING");
+      }
+    }
+
+    // When the NaCl module has loaded, hook up an event listener to handle
+    // messages coming from it via PPB_Messaging.PostMessage() (in C) or
+    // pp::Instance.PostMessage() (in C++), and indicate success.
+    function moduleDidLoad() {
+      TinyccModule = document.getElementById('tinycc');
+      TinyccModule.addEventListener('message', handleMessage, false);
+      updateStatus('MODULE LOADED');
+    }
+
+    function handleError(e) {
+      TinyccModule = document.getElementById('tinycc');
+      updateStatus(TinyccModule.lastError);
+    }
+
+    // The 'message' event handler.  This handler is fired when the NaCl module
+    // posts a message to the browser by calling PPB_Messaging.PostMessage()
+    // (in C) or pp::Instance.PostMessage() (in C++).  This implementation
+    // simply displays the content of the message in an alert panel.
+    function handleMessage(message_event) {
+      var msg = message_event.data;
+      if (!msg) return;
+      if (msg.match(/^status:(.*)/)) {
+        updateStatus(RegExp.$1);
+      } else {
+        document.getElementById('out').value = msg;
+        updateStatus("READY");
+      }
+    }
+
+    // If the page loads before the Native Client module loads, then set the
+    // status message indicating that the module is still loading.  Otherwise,
+    // do not change the status message.
+    function pageDidLoad() {
+      if (TinyccModule == null) {
+        updateStatus('LOADING... (you may need to enable nacl)');
+      } else {
+        // It's possible that the Native Client module onload event fired
+        // before the page's onload event.  In this case, the status message
+        // will reflect 'SUCCESS', but won't be displayed.  This call will
+        // display the current message.
+        updateStatus();
+      }
+    }
+
+    // Set the global status message.  If the element with id 'statusField'
+    // exists, then set its HTML to the status message as well.
+    // opt_message The message test.  If this is null or undefined, then
+    // attempt to set the element with id 'statusField' to the value of
+    // |statusText|.
+    function updateStatus(opt_message) {
+      if (opt_message)
+        statusText = opt_message;
+      var statusField = document.getElementById('status_field');
+      if (statusField) {
+        statusField.innerHTML = statusText;
+      }
+    }
+  </script>
+</head>
+<body onload="pageDidLoad()">
+
+<h1>Native Client Module Tinycc</h1>
+
+<h2>Status</h2>
+<div id="status_field">NO-STATUS</div>
+
+<h2>Code</h2>
+
+<textarea rows=25 cols=80 id="code">
+#include <stdio.h>
+#include <string.h>
+int main() {
+    int i;
+    for (i = 1; i <= 100; i++) {
+        char fb[256];
+        fb[0] = 0;
+        if (i % 3 == 0) {
+            strcpy(fb, "Fizz");
+        }
+        if (i % 5 == 0) {
+            strcat(fb, "Buzz");
+        }
+        if (strlen(fb)) {
+            puts(fb);
+        } else {
+            printf("%d\n", i);
+        }
+    }
+    return 0;
+}
+</textarea>
+<br>
+<input type="button" onclick="run('preprocess');" value="preprocess" disabled>
+<input type="button" onclick="run('compile');" value="compile" disabled>
+<input type="button" onclick="run('run');" value="run">
+
+<h2>Output</h2>
+
+<textarea rows=25 cols=80 id="out"></textarea><br>
+
+<p>
+  <!-- Load the published .nexe.  This includes the 'nacl' attribute which
+  shows how to load multi-architecture modules.  Each entry in the "nexes"
+  object in the .nmf manifest file is a key-value pair: the key is the
+  instruction set architecture ('x86-32', 'x86-64', etc.); the value is a URL
+  for the desired NaCl module.
+  To load the debug versions of your .nexes, set the 'nacl' attribute to the
+  _dbg.nmf version of the manifest file.
+
+  Note: Since this NaCl module does not use any real-estate in the browser,
+  it's width and height are set to 0.
+
+  Note: The <EMBED> element is wrapped inside a <DIV>, which has a 'load'
+  event listener attached.  This wrapping method is used instead of attaching
+  the 'load' event listener directly to the <EMBED> element to ensure that the
+  listener is active before the NaCl module 'load' event fires.
+  -->
+  <div id="listener">
+    <script type="text/javascript">
+       var listener = document.getElementById('listener');
+       listener.addEventListener('load', moduleDidLoad, true);
+       listener.addEventListener('error', handleError, true);
+    </script>
+
+    <embed name="nacl_module"
+       id="tinycc"
+       width=0 height=0
+       src="tinycc.nmf"
+       type="application/x-nacl" />
+  </div>
+</p>
+
+</body>
+</html>
