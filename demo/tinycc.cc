@@ -136,11 +136,12 @@ class TinyccInstance : public pp::Instance {
       tcc_output_file(s1, "/tmp/out");
     }
 
+    int status = -1;
     if (errors_.empty() && output_type == TCC_OUTPUT_MEMORY) {
       char* argv[] = {
         (char*)"./a.out", NULL
       };
-      tcc_run(s1, 1, argv);
+      status = tcc_run(s1, 1, argv);
     }
 
     string out;
@@ -167,6 +168,10 @@ class TinyccInstance : public pp::Instance {
           out += o;
         }
       }
+      out += "=== EXIT STATUS ===\n";
+      char buf[256];
+      sprintf(buf, "%d\n", status);
+      out += buf;
     } else {
       out += "=== COMPILE ERROR ===\n";
       for (size_t i = 0; i < errors_.size(); i++) {
