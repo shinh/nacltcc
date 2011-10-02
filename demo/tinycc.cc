@@ -60,7 +60,9 @@ class TinyccInstance : public pp::Instance {
  public:
   /// The constructor creates the plugin-side instance.
   /// @param[in] instance the handle to the browser-side plugin instance.
-  explicit TinyccInstance(PP_Instance instance) : pp::Instance(instance) {
+  explicit TinyccInstance(PP_Instance instance)
+    : pp::Instance(instance),
+      id_(0) {
     PostMessage(pp::Var("status:INITIALIZED"));
   }
 
@@ -115,12 +117,18 @@ class TinyccInstance : public pp::Instance {
     close(1);
     close(2);
     int fd;
-    fd = open("/tmp/stdout.txt", O_WRONLY | O_CREAT | O_TRUNC);
+    char stdout_filename[256];
+    sprintf(stdout_filename, "/tmp/stdout%d.txt", id_);
+    fd = open(stdout_filename, O_WRONLY | O_CREAT | O_TRUNC);
     assert(fd == 1);
-    fd = open("/tmp/stderr.txt", O_WRONLY | O_CREAT | O_TRUNC);
+    char stderr_filename[256];
+    sprintf(stderr_filename, "/tmp/stderr%d.txt", id_);
+    fd = open(stderr_filename, O_WRONLY | O_CREAT | O_TRUNC);
     assert(fd == 2);
 
-    fd = open("/tmp/input.c", O_WRONLY | O_CREAT | O_TRUNC);
+    char input_filename[256];
+    sprintf(input_filename, "/tmp/input%d.c", id_++);
+    fd = open(input_filename, O_WRONLY | O_CREAT | O_TRUNC);
     assert(fd >= 0);
     write(fd, msg.c_str() + colon_offset + 1, msg.size() - colon_offset - 1);
     close(fd);
@@ -131,7 +139,7 @@ class TinyccInstance : public pp::Instance {
     tcc_set_output_type(s1, output_type);
     tcc_add_include_path(s1, "/data/usr/include");
     tcc_add_include_path(s1, "/data/usr/lib/tcc/include");
-    tcc_add_file(s1, "/tmp/input.c");
+    tcc_add_file(s1, input_filename);
     if (output_type == TCC_OUTPUT_OBJ) {
       tcc_output_file(s1, "/tmp/out");
     }
@@ -146,11 +154,13 @@ class TinyccInstance : public pp::Instance {
 
     string out;
 
+    unlink(input_filename);
+
     close(1);
     close(2);
 
     if (errors_.empty()) {
-      fd = open("/tmp/stdout.txt", O_RDONLY);
+      fd = open(stdout_filename, O_RDONLY);
       if (fd >= 0) {
         string o;
         ReadFromFD(fd, &o);
@@ -159,7 +169,9 @@ class TinyccInstance : public pp::Instance {
           out += o;
         }
       }
-      fd = open("/tmp/stderr.txt", O_RDONLY);
+      close(fd);
+      unlink(stdout_filename);
+      fd = open(stderr_filename, O_RDONLY);
       if (fd >= 0) {
         string o;
         ReadFromFD(fd, &o);
@@ -168,6 +180,8 @@ class TinyccInstance : public pp::Instance {
           out += o;
         }
       }
+      close(fd);
+      unlink(stderr_filename);
       out += "=== EXIT STATUS ===\n";
       char buf[256];
       sprintf(buf, "%d\n", status);
@@ -287,6 +301,7 @@ private:
   auto_ptr<MainThreadRunner> runner_;
   auto_ptr<MemMount> mount_;
   vector<string> errors_;
+  int id_;
 };
 
 void* InitFileSystemThread(void* data) {
