@@ -62,6 +62,19 @@
     // status message indicating that the module is still loading.  Otherwise,
     // do not change the status message.
     function pageDidLoad() {
+      var url = location.href;
+      var hash = url.search('#');
+      if (hash >= 0) {
+        var params = {};
+        var toks = url.substring(hash + 1).split('&');
+        for (var i = 0; i < toks.length; i++) {
+          var kv = toks[i].split('=');
+          params[kv[0]] = unescape(kv[1]);
+        }
+        document.getElementById('code').value = params['code'];
+        document.getElementById('in').value = params['in'];
+      }
+
       if (TinyccModule == null) {
         updateStatus('LOADING... (you may need to enable nacl)');
       } else {
@@ -86,6 +99,12 @@
         statusField.innerHTML = statusText;
       }
     }
+
+    function updateURL() {
+      var code = document.getElementById('code').value;
+      var stdin = document.getElementById('in').value;
+      location.href = '#code=' + escape(code) + '&in=' + escape(stdin);
+    }
   </script>
 </head>
 <body onload="pageDidLoad()">
@@ -101,7 +120,7 @@
 
 <h2>Code</h2>
 
-<textarea rows=25 cols=80 id="code">
+<textarea rows=25 cols=80 id="code" onkeyup="updateURL()">
 #include <stdio.h>
 #include <string.h>
 int main() {
@@ -139,7 +158,7 @@ int main() {
 
 <h2>Input</h2>
 
-<textarea rows=25 cols=80 id="in"></textarea><br>
+<textarea rows=25 cols=80 id="in" onkeyup="updateURL()"></textarea><br>
 
 </td>
 </tr>
