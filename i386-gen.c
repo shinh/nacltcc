@@ -185,7 +185,7 @@ ST_FUNC int oad(int c, int s)
 {
     int ind1;
 
-    gp(5);
+    gp(8);
     o(c);
     ind1 = ind + 4;
     if (ind1 > cur_text_section->data_allocated)
@@ -723,9 +723,10 @@ ST_FUNC int gtst(int inv, int t)
                 t = gjmp(t);
         } else {
             v = gv(RC_INT);
-            gp(3);
+            gp(2);
             o(0x85);
             o(0xc0 + v * 9);
+            gp(9);
             g(0x0f);
             t = psym(0x85 ^ inv, t);
         }
