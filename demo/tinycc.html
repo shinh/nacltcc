@@ -95,6 +95,10 @@
 <h2 style="display: run-in">Status</h2>
 <div>&nbsp&nbsp&nbsp&nbsp<span id="status_field">NO-STATUS</div>
 
+<table>
+<tr>
+<td width="50%" valign="top">
+
 <h2>Code</h2>
 
 <textarea rows=25 cols=80 id="code">
@@ -125,6 +129,10 @@ int main() {
 <input type="button" onclick="run('compile');" value="compile" disabled>
 <input type="button" onclick="run('run');" value="run">
 
+</td>
+
+<td width="50%" valign="top">
+
 <h2>Output</h2>
 
 <textarea rows=25 cols=80 id="out"></textarea><br>
@@ -132,6 +140,10 @@ int main() {
 <h2>Input</h2>
 
 <textarea rows=25 cols=80 id="in"></textarea><br>
+
+</td>
+</tr>
+</table>
 
 <p>
   <!-- Load the published .nexe.  This includes the 'nacl' attribute which
