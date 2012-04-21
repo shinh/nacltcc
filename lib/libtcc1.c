@@ -111,8 +111,15 @@ union float_long {
 
 /* XXX: use gcc/tcc intrinsic ? */
 #if defined(__i386__)
+#ifdef __native_client__
+#define NACL_ALIGN ".align 32\n"
+#else
+#define NACL_ALIGN
+#endif
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
-  __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
+  __asm__ (								\
+	   NACL_ALIGN							\
+	   "subl %5,%1\n\tsbbl %3,%0"					\
 	   : "=r" ((USItype) (sh)),					\
 	     "=&r" ((USItype) (sl))					\
 	   : "0" ((USItype) (ah)),					\
@@ -120,13 +127,17 @@ union float_long {
 	     "1" ((USItype) (al)),					\
 	     "g" ((USItype) (bl)))
 #define umul_ppmm(w1, w0, u, v) \
-  __asm__ ("mull %3"							\
+  __asm__ (								\
+	   NACL_ALIGN							\
+	   "mull %3"							\
 	   : "=a" ((USItype) (w0)),					\
 	     "=d" ((USItype) (w1))					\
 	   : "%0" ((USItype) (u)),					\
 	     "rm" ((USItype) (v)))
 #define udiv_qrnnd(q, r, n1, n0, dv) \
-  __asm__ ("divl %4"							\
+  __asm__ (								\
+	   NACL_ALIGN							\
+	   "divl %4"							\
 	   : "=a" ((USItype) (q)),					\
 	     "=d" ((USItype) (r))					\
 	   : "0" ((USItype) (n0)),					\
@@ -135,7 +146,9 @@ union float_long {
 #define count_leading_zeros(count, x) \
   do {									\
     USItype __cbtmp;							\
-    __asm__ ("bsrl %1,%0"						\
+    __asm__ (								\
+	     NACL_ALIGN							\
+	     "bsrl %1,%0"						\
 	     : "=r" (__cbtmp) : "rm" ((USItype) (x)));			\
     (count) = __cbtmp ^ 31;						\
   } while (0)
