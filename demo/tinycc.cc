@@ -166,6 +166,7 @@ class TinyccInstance : public pp::Instance {
 
     unlink(input_filename);
 
+    close(0);
     close(1);
     close(2);
 
