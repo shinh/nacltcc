@@ -1,6 +1,8 @@
 /* ---------------------------------------------- */
 /* alloca86-bt.S */
 
+#ifndef __native_client__
+
 .globl __bound_alloca
 
 __bound_alloca:
@@ -45,3 +47,5 @@ p6:
     .section    .note.GNU-stack,"",@progbits
 #endif
 /* ---------------------------------------------- */
+
+#endif

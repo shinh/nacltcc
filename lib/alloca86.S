@@ -1,6 +1,8 @@
 /* ---------------------------------------------- */
 /* alloca86.S */
 
+#ifndef __native_client__
+
 .globl alloca
 
 alloca:
@@ -33,3 +35,5 @@ p3:
     .section    .note.GNU-stack,"",@progbits
 #endif
 /* ---------------------------------------------- */
+
+#endif
