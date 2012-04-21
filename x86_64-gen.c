@@ -242,7 +242,7 @@ static int is_sse_float(int t) {
 ST_FUNC int oad(int c, int s)
 {
     int ind1;
-    gp(8);
+    gp(5);
     o(c);
     ind1 = ind + 4;
     if (ind1 > cur_text_section->data_allocated)
