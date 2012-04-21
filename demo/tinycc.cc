@@ -98,7 +98,6 @@ class TinyccInstance : public pp::Instance {
     size_t colon_offset = msg.find(':');
     if (colon_offset == string::npos) {
       PostMessage(pp::Var("invalid command: " + var_message.DebugString()));
-
     }
 
     const string& cmd = msg.substr(0, colon_offset);
@@ -114,9 +113,20 @@ class TinyccInstance : public pp::Instance {
       return;
     }
 
+    string code, stdin_contents;
+    ParseStringArgs(msg.c_str() + colon_offset + 1, &code, &stdin_contents);
+
+    close(0);
     close(1);
     close(2);
     int fd;
+    char stdin_filename[256];
+    sprintf(stdin_filename, "/tmp/stdin%d.txt", id_);
+    fd = open(stdin_filename, O_WRONLY | O_CREAT | O_TRUNC);
+    write(fd, stdin_contents.data(), stdin_contents.size());
+    close(fd);
+    fd = open(stdin_filename, O_RDONLY);
+    assert(fd == 0);
     char stdout_filename[256];
     sprintf(stdout_filename, "/tmp/stdout%d.txt", id_);
     fd = open(stdout_filename, O_WRONLY | O_CREAT | O_TRUNC);
@@ -130,7 +140,7 @@ class TinyccInstance : public pp::Instance {
     sprintf(input_filename, "/tmp/input%d.c", id_++);
     fd = open(input_filename, O_WRONLY | O_CREAT | O_TRUNC);
     assert(fd >= 0);
-    write(fd, msg.c_str() + colon_offset + 1, msg.size() - colon_offset - 1);
+    write(fd, code.data(), code.size());
     close(fd);
 
     ScopedTCCState tcc_state;
@@ -296,6 +306,27 @@ private:
     string s;
     ReadFromFD(fd, &s);
     return s;
+  }
+
+  void ParseStringArgs(const char* p, string* code, string* stdin_contents) {
+    p = ParseStringArg(p, code);
+    p = ParseStringArg(p, stdin_contents);
+  }
+
+  const char* ParseStringArg(const char* p, string* s) {
+    if (!p || !*p)
+      return NULL;
+    int len = 0;
+    while (isdigit(*p)) {
+      len *= 10;
+      len += *p - '0';
+      p++;
+    }
+    if (!*p || *p != ' ')
+      return NULL;
+    p++;
+    s->assign(p, p + len);
+    return p + len;
   }
 
   auto_ptr<MainThreadRunner> runner_;

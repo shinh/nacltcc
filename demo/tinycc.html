@@ -16,7 +16,14 @@
         document.getElementById('out').value = "NOT READY YET";
       } else {
         var msg = cmd + ':';
-        msg += document.getElementById('code').value;
+        var code = document.getElementById('code').value;
+        msg += code.length;
+        msg += ' ';
+        msg += code;
+        var stdin = document.getElementById('in').value;
+        msg += stdin.length;
+        msg += ' ';
+        msg += stdin;
         TinyccModule.postMessage(msg);
         updateStatus("RUNNING (or tcc has crashed)");
       }
@@ -121,6 +128,10 @@ int main() {
 <h2>Output</h2>
 
 <textarea rows=25 cols=80 id="out"></textarea><br>
+
+<h2>Input</h2>
+
+<textarea rows=25 cols=80 id="in"></textarea><br>
 
 <p>
   <!-- Load the published .nexe.  This includes the 'nacl' attribute which
