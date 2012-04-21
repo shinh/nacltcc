@@ -20,18 +20,18 @@ http://shinh.skr.jp/nacltcc/tinycc.html
 
 You need at least the followings:
 
-NaCl SDK (my version is native_client_sdk_0_5_105)
+NaCl SDK (my version is pepper_19)
 ruby
 make, etc.
 
 For web interface, you also need:
 
-naclports (my revision is 433)
+naclports (my revision is 573, must not be > r573 nor < r477)
 Chrome (tested on 15.0.874.5 dev on 64bit linux, 14.0.835.186 on 32bit mac)
 
 You need to set NACL_SDK_ROOT environment variable before the next step:
 
-% export NACL_SDK_ROOT=$HOME/src/native_client_sdk_0_5_1052
+% export NACL_SDK_ROOT=$HOME/src/nacl_sdk/pepper_19
 
 - build the CLI version
 
@@ -46,7 +46,9 @@ NACL_PACKAGES_BITSIZE if you want 64bit binary:
 
 - run the CLI version
 
-% $NACL_SDK_ROOT/toolchain/*/bin/sel_ldr_x86_32 -a ./tcc -B. -run hello.c
+% sel_ldr_x86_32 -B $NACL_SDK_ROOT/tools/irt_x86_32.nexe ./tcc -B. -run hello.c
+
+For now, file output isn't working due to lack of unlink(2)
 
 If you are using 64bit version, please use sel_ldr_x86_64 instead.
 Of course, you may want to replace * to your actual toolchain directory.
@@ -58,9 +60,9 @@ environment variable.
 
 % cd demo
 % make
-% ./pack_data.sh path_to/naclports/src/libraries/nacl-mounts/util/simple_tar.py
+% ./pack_data.sh
 
-Then, put data.sar, tinycc.html, tinycc.nmf, and *.nexe in your web server.
+Then, put data.tar, tinycc.html, tinycc.nmf, and *.nexe in your web server.
 Note that NaCl won't run on file:/// URLs.
 
 * Known issues

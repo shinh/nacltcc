@@ -18,7 +18,7 @@ if [ "x$NACL_SDK_ROOT" = "x" ]; then
 fi
 
 if [ "x$NACL_TOOLCHAIN_ROOT" = "x" ]; then
-    export NACL_TOOLCHAIN_ROOT="$(ls -d $NACL_SDK_ROOT/toolchain/* | grep -v _newlib)"
+    export NACL_TOOLCHAIN_ROOT="$(ls -d $NACL_SDK_ROOT/toolchain/* | grep _newlib)"
     if [ "x$NACL_TOOLCHAIN_ROOT" = "x" ]; then
         echo "Failed to detect NACL_TOOLCHAIN_ROOT in $NACL_SDK_ROOT/toolchain."
         echo "Set this environment variable manually."

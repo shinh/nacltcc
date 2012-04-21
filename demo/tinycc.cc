@@ -217,13 +217,13 @@ class TinyccInstance : public pp::Instance {
   void InitFileSystem() {
     PostMessageFromThread("status:DOWNLOADING DATA");
     UrlLoaderJob *job = new UrlLoaderJob;
-    job->set_url("data.sar");
+    job->set_url("data.tar");
     std::vector<char> data;
     job->set_dst(&data);
     runner_->RunJob(job);
 
     PostMessageFromThread("status:WRITING DATA");
-    int fd = open("/data.sar", O_CREAT | O_WRONLY);
+    int fd = open("/data.tar", O_CREAT | O_WRONLY);
     if (fd < 0) {
       PostMessageFromThread("status:WRITE DATA FAILED");
       return;
@@ -235,7 +235,7 @@ class TinyccInstance : public pp::Instance {
     mkdir("/data", 0777);
     chdir("/data");
     PostMessageFromThread("status:EXTRACTING DATA");
-    int r = simple_tar_extract("/data.sar");
+    int r = simple_tar_extract("/data.tar");
     if (r != 0) {
       PostMessageFromThread("status:EXTRACT DATA FAILED");
     }
