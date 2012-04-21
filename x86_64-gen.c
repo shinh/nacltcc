@@ -1248,10 +1248,10 @@ int gjmp(int t)
 /* generate a jump to a fixed address */
 void gjmp_addr(int a)
 {
+    gp(5);
     int r;
     r = a - ind - 2;
     if (r == (char)r) {
-        gp(2);
         g(0xeb);
         g(r);
     } else {

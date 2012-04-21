@@ -677,9 +677,9 @@ ST_FUNC int gjmp(int t)
 ST_FUNC void gjmp_addr(int a)
 {
     int r;
+    gp(5);
     r = a - ind - 2;
     if (r == (char)r) {
-        gp(2);
         g(0xeb);
         g(r);
     } else {
