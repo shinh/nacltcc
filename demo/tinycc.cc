@@ -213,7 +213,30 @@ class TinyccInstance : public pp::Instance {
         return;
       }
       ReadFromFD(fd, &out);
-      PostMessage(pp::Var(out));
+      string hex;
+      char buf[20];
+      for (int i = 0; i < (int)out.size(); i += 16) {
+        sprintf(buf, "%07x:", i);
+        hex += buf;
+        for (int j = 0; j < 16; j++) {
+          if (j % 2 == 0)
+            hex += ' ';
+          if (i + j < (int)out.size()) {
+            sprintf(buf, "%02x", (unsigned char)out[i+j]);
+            hex += buf;
+          }
+        }
+        hex += "  ";
+        for (int j = 0; j < 16 && i + j < (int)out.size(); j++) {
+          char c = out[i+j];
+          if (isprint(c))
+            hex += c;
+          else
+            hex += '.';
+        }
+        hex += "\n";
+      }
+      PostMessage(pp::Var(hex));
       return;
     }
 
@@ -297,9 +320,8 @@ private:
     char* buf = (char*)malloc(size + 1);
     buf[size] = '\0';
     read(fd, buf, size);
+    out->assign(buf, buf+size);
     close(fd);
-    *out = buf;
-    free(buf);
   }
 
   static string ReadFromFile(const char* file) {
