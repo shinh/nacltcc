@@ -9,14 +9,12 @@ LDFLAGS:=-lppapi -lppapi_cpp -lnacl-mounts -lnacl_dyncode -lppapi_cpp
 
 all: tinycc_x86_32.nexe tinycc_x86_64.nexe
 
-tinycc_x86_%.nexe: tinycc.cc libtcc%.a libtcc1_%.a
-	$(CXX) -m$* $(CFLAGS) $^ $(LDFLAGS) -o $@
+tinycc_x86_%.nexe: tinycc.cc libtcc%.a
+	$(CXX) -m$* $(CFLAGS) $^ libtcc1_$*.a $(LDFLAGS) -o $@
 
-libtcc1_%.a: libtcc%.a
-	cp ../libtcc1.a $@
-
-libtcc%.a:
+libtcc%.a: $(wildcard ../*.c ../tcc.h)
 	cd .. && NACL_PACKAGES_BITSIZE=$* ./nacl-configure && $(MAKE) clean && $(MAKE) all
+	cp ../libtcc1.a libtcc1_$*.a
 	cp ../libtcc.a $@
 
 clean:
