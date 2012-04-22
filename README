@@ -26,7 +26,7 @@ make, etc.
 
 For web interface, you also need:
 
-naclports (my revision is 573, must not be > r573 nor < r477)
+naclports (my revision is 575, must be > r573)
 Chrome (tested on 15.0.874.5 dev on 64bit linux, 14.0.835.186 on 32bit mac)
 
 You need to set NACL_SDK_ROOT environment variable before the next step:
