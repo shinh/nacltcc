@@ -256,12 +256,12 @@ class TinyccInstance : public pp::Instance {
           }
           hex += "\n";
         }
-        PostMessage(pp::Var(out + hex));
+        PostMessageChecked(out + hex);
       }
       return;
     }
 
-    PostMessage(pp::Var(out));
+    PostMessageChecked(out);
   }
 
   static void HandleTCCError(void* data, const char* msg) {
