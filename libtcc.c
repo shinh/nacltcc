@@ -1682,3 +1682,8 @@ PUB_FUNC void tcc_gen_makedeps(TCCState *s, const char *target, const char *file
     fprintf(depout, "\n");
     fclose(depout);
 }
+
+/* set outfile for preprocessor */
+PUB_FUNC void tcc_set_outfile(TCCState *s,  FILE *fp) {
+  s->outfile = fp;
+}

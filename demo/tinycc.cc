@@ -149,6 +149,11 @@ class TinyccInstance : public pp::Instance {
     tcc_set_output_type(s1, output_type);
     tcc_add_include_path(s1, "/data/usr/include");
     tcc_add_include_path(s1, "/data/usr/lib/tcc/include");
+    FILE* fp = NULL;
+    if (output_type == TCC_OUTPUT_PREPROCESS) {
+      fp = fopen("/tmp/out", "wb");
+      tcc_set_outfile(s1, fp);
+    }
     tcc_add_file(s1, input_filename);
     if (output_type == TCC_OUTPUT_OBJ) {
       tcc_output_file(s1, "/tmp/out");
@@ -193,10 +198,12 @@ class TinyccInstance : public pp::Instance {
       }
       close(fd);
       unlink(stderr_filename);
-      out += "=== EXIT STATUS ===\n";
-      char buf[256];
-      sprintf(buf, "%d\n", status);
-      out += buf;
+      if (output_type == TCC_OUTPUT_MEMORY) {
+        out += "=== EXIT STATUS ===\n";
+        char buf[256];
+        sprintf(buf, "%d\n", status);
+        out += buf;
+      }
     } else {
       out += "=== COMPILE ERROR ===\n";
       for (size_t i = 0; i < errors_.size(); i++) {
@@ -205,38 +212,51 @@ class TinyccInstance : public pp::Instance {
       }
     }
 
-    if (output_type == TCC_OUTPUT_OBJ) {
+    if (output_type == TCC_OUTPUT_OBJ ||
+        output_type == TCC_OUTPUT_PREPROCESS) {
+      if (output_type == TCC_OUTPUT_PREPROCESS) {
+        fclose(fp);
+      }
       int fd = open("/tmp/out", O_RDONLY);
       if (fd < 0) {
         PostMessage(pp::Var(
                       string("failed to read output: ") + strerror(errno)));
         return;
       }
-      ReadFromFD(fd, &out);
-      string hex;
-      char buf[20];
-      for (int i = 0; i < (int)out.size(); i += 16) {
-        sprintf(buf, "%07x:", i);
-        hex += buf;
-        for (int j = 0; j < 16; j++) {
-          if (j % 2 == 0)
-            hex += ' ';
-          if (i + j < (int)out.size()) {
-            sprintf(buf, "%02x", (unsigned char)out[i+j]);
-            hex += buf;
+      string o;
+      ReadFromFD(fd, &o);
+
+      if (output_type == TCC_OUTPUT_PREPROCESS) {
+        PostMessageChecked(out + o);
+      } else {
+        string hex;
+        char buf[20];
+        for (int i = 0; i < (int)o.size(); i += 16) {
+          sprintf(buf, "%07x:", i);
+          hex += buf;
+          for (int j = 0; j < 16; j++) {
+            if (j % 2 == 0)
+              hex += ' ';
+            if (i + j < (int)o.size()) {
+              sprintf(buf, "%02x", (unsigned char)o[i+j]);
+              hex += buf;
+            }
           }
+          hex += "  ";
+          for (int j = 0; j < 16 && i + j < (int)o.size(); j++) {
+            char c = o[i+j];
+            if (isprint(c))
+              hex += c;
+            else
+              hex += '.';
+          }
+          hex += "\n";
         }
-        hex += "  ";
-        for (int j = 0; j < 16 && i + j < (int)out.size(); j++) {
-          char c = out[i+j];
-          if (isprint(c))
-            hex += c;
-          else
-            hex += '.';
+        if (!out.empty()) {
+          out += '\n';
         }
-        hex += "\n";
+        PostMessage(pp::Var(out + hex));
       }
-      PostMessage(pp::Var(hex));
       return;
     }
 
@@ -308,6 +328,13 @@ private:
   private:
     TCCState* s1_;
   };
+
+  void PostMessageChecked(const string& msg) {
+    if (msg.empty())
+      PostMessage("=== NO OUTPUT ===");
+    else
+      PostMessage(pp::Var(msg));
+  }
 
   void PostMessageFromThread(const string& msg) {
     PostMessageJob* job = new PostMessageJob(msg);

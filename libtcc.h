@@ -101,6 +101,9 @@ LIBTCCAPI void *tcc_get_symbol(TCCState *s, const char *name);
 /* set CONFIG_TCCDIR at runtime */
 LIBTCCAPI void tcc_set_lib_path(TCCState *s, const char *path);
 
+/* set outfile for preprocessor */
+LIBTCCAPI void tcc_set_outfile(TCCState *s,  FILE *fp);
+
 #ifdef __cplusplus
 }
 #endif
