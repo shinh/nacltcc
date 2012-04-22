@@ -631,8 +631,10 @@ PUB_FUNC void tcc_error(const char *fmt, ...)
     if (s1->error_set_jmp_enabled) {
         longjmp(s1->error_jmp_buf, 1);
     } else {
+#ifndef __native_client__
         /* XXX: eliminate this someday */
         exit(1);
+#endif
     }
 }
 
