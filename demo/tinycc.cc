@@ -214,6 +214,10 @@ class TinyccInstance : public pp::Instance {
 
     if (output_type == TCC_OUTPUT_OBJ ||
         output_type == TCC_OUTPUT_PREPROCESS) {
+      if (!out.empty()) {
+        out += "\n=== OUTPUT ===\n";
+      }
+
       if (output_type == TCC_OUTPUT_PREPROCESS) {
         fclose(fp);
       }
@@ -251,9 +255,6 @@ class TinyccInstance : public pp::Instance {
               hex += '.';
           }
           hex += "\n";
-        }
-        if (!out.empty()) {
-          out += '\n';
         }
         PostMessage(pp::Var(out + hex));
       }
